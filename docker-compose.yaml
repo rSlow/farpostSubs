@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  aiogram:
+    build: ./tgbot
+    restart: always
+    environment:
+      - ENV_FILE=${ENV_FILE:-.env}
+    volumes:
+      - ./${ENV_FILE:-.env}/:/app/${ENV_FILE:-.env}/:ro
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres
+    restart: always
+    env_file:
+      - ${ENV_FILE:-.env}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data/pgdata/app
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata/app
+
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - "${REDIS_PORT}:6379"
+    command:
+      - "redis-server"
+      - "--loglevel ${REDIS_LOGLEVEL:-warning}"
+      - "--databases 2"
+      - "--save 900 1"
+      - "--save 300 10"
+      - "--save 60 10000"
+      - "--maxmemory ${REDIS_MAXMEM:-50mb}"
+      - "--maxmemory-policy ${REDIS_POLICY:-noeviction}"
+      - "--requirepass ${REDIS_PASS}"
+    volumes:
+      - redis:/data
+    env_file:
+      - ${ENV_FILE:-.env}
+
+volumes:
+  redis:
+  postgres:

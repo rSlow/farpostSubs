@@ -1,0 +1,10 @@
+aiogram
+aiogram-dialog
+alembic
+asyncpg
+environs
+Jinja2
+loguru
+pytz
+redis
+SQLAlchemy
