@@ -31,7 +31,7 @@ except ImportError as ex:
     raise ex
 
 try:
-    ...  # import models
+    from apps.subs.ORM.subs import Subscription
 except ImportError:
     raise
 
