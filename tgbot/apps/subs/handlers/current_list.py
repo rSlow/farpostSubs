@@ -24,7 +24,8 @@ async def current_subs_getter(event_from_user: User,
     subs_buttons = [(sub.id, sub.name, sub.is_active) for sub in subs]
     return {
         "subs": subs_buttons,
-        "subs_count": len(subs)
+        "subs_count": len(subs),
+        "active_subs_count": len([*filter(lambda x: x.is_active, subs)])
     }
 
 
@@ -41,15 +42,19 @@ async def on_sub_click(_: types.CallbackQuery,
 when_subs = WhenAble("subs")
 
 
-def text_selector(data: dict,
-                  _: Case,
-                  __: DialogManager):
-    return data["item"][2]
+def item_data_selector(pos: int):
+    def inner(data: dict,
+              _: Case,
+              __: DialogManager):
+        return data["item"][pos]
+
+    return inner
 
 
 current_subs_dialog = Dialog(
     Window(
         Format("Текущих подписок: {subs_count}"),
+        Format("Активных подписок: {active_subs_count}"),
         ScrollingGroup(
             Select(
                 text=Case(
@@ -57,7 +62,7 @@ current_subs_dialog = Dialog(
                         True: Format('✅ {item[1]}'),
                         False: Format('❌ {item[1]}'),
                     },
-                    selector=text_selector
+                    selector=item_data_selector(2)
                 ),
                 item_id_getter=itemgetter(0),
                 id="subs",

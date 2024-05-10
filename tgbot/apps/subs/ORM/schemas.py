@@ -1,21 +1,31 @@
 from typing import Annotated
 
-from pydantic import HttpUrl, BeforeValidator, BaseModel
+from pydantic import HttpUrl, BeforeValidator, BaseModel, Field
 
 from ..types import farpost_url_factory
 
 
-def _url_regexp_validator(url: HttpUrl | str):
+def url_regexp_validator(url: HttpUrl | str):
     if isinstance(url, str):
         url = HttpUrl(url)
     str_url = str(url)
     return farpost_url_factory(str_url)
 
 
+def frequency_validator(data: str):
+    try:
+        frequency = int(data)
+    except ValueError:
+        raise ValueError(f"Неверно указано значение частоты обновления - {data}")
+    if frequency < 30:
+        raise ValueError("Значение частоты обновления менее 30 секунд")
+    return frequency
+
+
 class SubscriptionCreateModel(BaseModel):
     telegram_id: int
-    url: Annotated[HttpUrl, BeforeValidator(_url_regexp_validator)]
-    frequency: int
+    url: Annotated[HttpUrl, BeforeValidator(url_regexp_validator)]
+    frequency: int = Field(ge=30)
     name: str
 
 

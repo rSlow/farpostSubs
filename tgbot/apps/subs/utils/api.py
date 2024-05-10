@@ -1,4 +1,3 @@
-import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -6,7 +5,6 @@ from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
-from .. import settings
 from common.utils.functions import get_now
 from ..ORM.schemas import SubscriptionModel
 
@@ -44,8 +42,7 @@ async def download_page(session: ClientSession,
 
 def save_page(path: Path,
               data: bytes):
-    if not settings.TEMP_DIR.exists():
-        os.mkdir(settings.TEMP_DIR)
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as file:
         file.write(data)
 

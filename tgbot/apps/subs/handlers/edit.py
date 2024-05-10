@@ -13,6 +13,7 @@ from common.dialogs.factory.functions import OnInvalidInput
 from common.dialogs.factory.yes_no import yes_no_window
 from common.dialogs.widgets.data_checkbox import DataCheckbox
 from common.whens import WhenAble
+from ..ORM.schemas import frequency_validator
 from ..ORM.subs import Subscription
 from ..buttons import ON_MAIN_BUTTON
 from ..scheduler import SubsScheduler
@@ -92,21 +93,22 @@ sub_main_window = Window(
 async def set_name(message: types.Message,
                    _: ManagedTextInput,
                    manager: DialogManager,
-                   data: str):
-    session: AsyncSession = manager.middleware_data["session"]
-    sub_id: int = manager.dialog_data["id"]
-    await Subscription.update_name(
-        session=session,
-        sub_id=sub_id,
-        name=data
-    )
+                   name: str):
+    if name != manager.dialog_data["name"]:
+        session: AsyncSession = manager.middleware_data["session"]
+        sub_id: int = manager.dialog_data["id"]
+        await Subscription.update_name(
+            session=session,
+            sub_id=sub_id,
+            name=name
+        )
     await message.delete()
     manager.show_mode = ShowMode.EDIT
     await manager.switch_to(SubMenu.main)
 
 
 sub_name_window = Window(
-    Format("Текущее название: {name}"),
+    Format("Текущее название: <code>{name}</code>"),
     Const("\nВведите новое название:"),
     TextInput(
         id="name",
@@ -121,18 +123,19 @@ sub_name_window = Window(
 async def set_frequency(message: types.Message,
                         _: ManagedTextInput,
                         manager: DialogManager,
-                        data: int):
-    session: AsyncSession = manager.middleware_data["session"]
-    subs_scheduler: SubsScheduler = manager.middleware_data["subs_scheduler"]
-    sub_id: int = manager.dialog_data["id"]
+                        frequency: int):
+    if frequency != manager.dialog_data["frequency"]:
+        session: AsyncSession = manager.middleware_data["session"]
+        subs_scheduler: SubsScheduler = manager.middleware_data["subs_scheduler"]
+        sub_id: int = manager.dialog_data["id"]
 
-    await Subscription.update_frequency(
-        session=session,
-        sub_id=sub_id,
-        frequency=data
-    )
-    sub = await Subscription.get(sub_id, session)
-    subs_scheduler.update_sub(sub)
+        await Subscription.update_frequency(
+            session=session,
+            sub_id=sub_id,
+            frequency=frequency
+        )
+        sub = await Subscription.get(sub_id, session)
+        subs_scheduler.update_sub(sub)
 
     await message.delete()
     manager.show_mode = ShowMode.EDIT
@@ -141,13 +144,14 @@ async def set_frequency(message: types.Message,
 
 sub_frequency_window = Window(
     Format("Текущее значение частоты обновления: {frequency} секунд"),
-    Const("\nВведите новую частоту обновления (в секундах):"),
+    Const("\nЗначение частоты обновления должно быть больше или равно 30 секундам."),
+    Const("Введите новую частоту обновления (в секундах):"),
     TextInput(
         id="frequency",
-        type_factory=int,
+        type_factory=frequency_validator,
         on_success=set_frequency,
         on_error=OnInvalidInput(
-            error_message="Неверно указано значение частоты обновления - {data}",
+            error_message="{error.args[0]}",
             delete_input=True
         )
     ),

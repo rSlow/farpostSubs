@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from common.buttons import CANCEL_BUTTON, BACK_BUTTON
 from common.dialogs.factory.functions import OnInvalidInput, OnValidInput
 from common.utils.functions import edit_dialog_message
-from ..ORM.schemas import SubscriptionCreateModel
+from ..ORM.schemas import SubscriptionCreateModel, frequency_validator
 from ..ORM.subs import Subscription
 from ..scheduler import SubsScheduler
 from ..states import CreateSub
@@ -17,7 +17,8 @@ from ..types import farpost_url_factory
 
 url_window = Window(
     Const("Ожидаю ссылку подписки в формате:"),
-    Const("https://www.farpost.ru/saved_search/.../.../show/restored"),
+    Const("https://www.farpost.ru/saved_search/.../.../show"),
+    Const("Прочие дополнительные параметры запроса уберутся автоматически."),
     TextInput(
         id="url",
         type_factory=farpost_url_factory,
@@ -37,10 +38,10 @@ async def on_default_frequency(_: types.CallbackQuery,
 
 
 frequency_window = Window(
-    Const("Укажите периодичность проверки в секундах (цифрой):"),
+    Const("Укажите периодичность проверки в секундах (цифрой), не менее 30 секунд:"),
     TextInput(
         id="frequency",
-        type_factory=int,
+        type_factory=frequency_validator,
         on_success=OnValidInput(),
         on_error=OnInvalidInput("Ошибка валидации значения периодичности: {message.text}")
     ),

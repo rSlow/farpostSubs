@@ -1,6 +1,6 @@
 from sqlalchemy import UniqueConstraint, BigInteger, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, validates
 from sqlalchemy_utils import URLType
 
 from .schemas import SubscriptionCreateModel, SubscriptionModel
@@ -20,8 +20,16 @@ class Subscription(Base,
     url = mapped_column(URLType(), nullable=False)
     name: Mapped[str]
     telegram_id = mapped_column(BigInteger())
-    frequency: Mapped[int] = mapped_column(default=1)  # in minutes
+    frequency: Mapped[int] = mapped_column()
     is_active: Mapped[bool] = mapped_column(default=True)
+
+    @validates("frequency")
+    def validate_frequency(self,
+                           _: str,
+                           frequency: int):
+        if frequency < 30:
+            raise ValueError("frequency must be greater or equal 30 seconds")
+        return frequency
 
     @classmethod
     async def get_all_user_subscriptions(cls,
@@ -32,7 +40,7 @@ class Subscription(Base,
         )
         result = await session.execute(q)
         user_subs = result.scalars().all()
-        return user_subs
+        return [SubscriptionModel.model_validate(user_sub) for user_sub in user_subs]
 
     @classmethod
     async def get(cls,

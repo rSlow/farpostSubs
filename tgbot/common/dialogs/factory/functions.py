@@ -1,3 +1,4 @@
+import html
 from abc import abstractmethod
 from typing import TypeVar, Optional, Protocol, Any, Callable
 
@@ -73,7 +74,7 @@ class OnInvalidInput:
         message_text = self.error_message.format(
             message=message,
             error=error,
-            data=text_input.get_value()
+            data=html.escape(message.html_text)
         )
         await message.answer(message_text)
         if self.delete_input:
