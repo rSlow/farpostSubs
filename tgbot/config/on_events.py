@@ -2,8 +2,10 @@ from aiogram import Bot, Dispatcher
 from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 from loguru import logger
 
+from apps.subs.scheduler import SubsScheduler
 from common.ORM.database import Session
 from common.middlewares import DbSessionMiddleware, ContextMiddleware, register_middlewares
+from common.scheduler import init_schedulers
 from config import settings
 from config.enums import BotMode
 from config.logger import init_logging
@@ -15,11 +17,15 @@ async def on_startup(dispatcher: Dispatcher,
                      bot: Bot,
                      **__):
     logger.info("STARTUP")
-
     init_logging()
 
+    schedulers = {
+        "subs_scheduler": SubsScheduler(bot=bot, dispatcher=dispatcher)
+    }
+    await init_schedulers([*schedulers.values()])
+
     middlewares = [
-        ContextMiddleware(),
+        ContextMiddleware(**schedulers),
         DbSessionMiddleware(session_pool=Session),
         CallbackAnswerMiddleware()
     ]

@@ -3,6 +3,7 @@ from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram_dialog import setup_dialogs
 
 from common.handlers.main import main_menu
+from .routes.events import events_router
 from .storage import redis_storage
 from . import settings
 from loguru import logger
@@ -29,6 +30,7 @@ def init_dispatcher(dispatcher: Dispatcher):
     setup_dialogs(dispatcher)
 
     dispatcher.include_routers(
+        events_router,
         commands_router,
         error_router,
         main_menu,

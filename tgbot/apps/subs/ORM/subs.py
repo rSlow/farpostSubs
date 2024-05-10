@@ -1,44 +1,32 @@
-from sqlalchemy import UniqueConstraint, BigInteger, select, String
+from sqlalchemy import UniqueConstraint, BigInteger, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy_utils import URLType
 
-from apps.subs.ORM.schemas import SubscriptionCreateModel, SubscriptionModel
-from common.ORM.database import Base
-from common.ORM.mixins.crud import RetrieveMixin, UpdateMixin, DeleteMixin
+from .schemas import SubscriptionCreateModel, SubscriptionModel
+from ..exceptions import AlreadyExistsError
+from common.ORM.database import Base, Session
 
 from common.ORM.mixins.fields import TimestampMixin, IDMixin
 
 
 class Subscription(Base,
-                   TimestampMixin, IDMixin,
-                   RetrieveMixin, UpdateMixin, DeleteMixin):
+                   TimestampMixin, IDMixin):
     __tablename__ = "subscriptions"
     __table_args__ = (
         UniqueConstraint('telegram_id', 'url', name='_telegram_id_url_uc'),
     )
 
-    url = mapped_column(URLType())
-    _name = mapped_column(String(), nullable=True)
+    url = mapped_column(URLType(), nullable=False)
+    name: Mapped[str]
     telegram_id = mapped_column(BigInteger())
     frequency: Mapped[int] = mapped_column(default=1)  # in minutes
     is_active: Mapped[bool] = mapped_column(default=True)
 
-    @hybrid_property
-    def name(self):
-        if not self._name:
-            return self.url
-        return self._name
-
-    @name.setter
-    def name(self, value: str):
-        self._name = value
-
     @classmethod
-    async def get_from_user(cls,
-                            telegram_id: int,
-                            session: AsyncSession):
+    async def get_all_user_subscriptions(cls,
+                                         telegram_id: int,
+                                         session: AsyncSession):
         q = select(cls).filter(
             cls.telegram_id == telegram_id
         )
@@ -47,11 +35,95 @@ class Subscription(Base,
         return user_subs
 
     @classmethod
+    async def get(cls,
+                  sub_id: int,
+                  session: AsyncSession):
+        q = select(cls).filter(
+            cls.id == sub_id
+        )
+        result = await session.execute(q)
+        sub = result.scalars().one()
+        sub_model = SubscriptionModel.model_validate(sub)
+        return sub_model
+
+    @classmethod
+    async def get_all(cls):
+        async with Session() as session:
+            q = select(cls)
+            res = await session.execute(q)
+            subs = res.scalars().all()
+            return [SubscriptionModel.model_validate(sub) for sub in subs]
+
+    async def check_exist(self, session: AsyncSession):
+        q = select(
+            select(type(self)).filter(
+                self.telegram_id == self.telegram_id,
+                self.url == self.url,
+            ).exists()
+        )
+        res = await session.execute(q)
+        return res.scalar()
+
+    @classmethod
     async def add(cls,
                   sub_model: SubscriptionCreateModel,
                   session: AsyncSession):
-        sub = cls(**sub_model.model_dump())
+        sub = cls(**sub_model.model_dump(mode="json"))
+        is_exist = await sub.check_exist(session)
+        if is_exist:
+            raise AlreadyExistsError(f"Подписка {sub.url} уже существует.")
+
         session.add(sub)
         await session.commit()
         await session.refresh(sub)
         return SubscriptionModel.model_validate(sub)
+
+    @classmethod
+    async def delete(cls,
+                     sub_id: int,
+                     session: AsyncSession):
+        q = delete(cls).filter(
+            cls.id == sub_id
+        )
+        await session.execute(q)
+        await session.commit()
+
+    @classmethod
+    async def set_is_active(cls,
+                            sub_id: int,
+                            is_active: bool,
+                            session: AsyncSession):
+        q = update(cls).where(
+            cls.id == sub_id
+        ).values(
+            is_active=is_active
+        )
+
+        await session.execute(q)
+        await session.commit()
+
+    @classmethod
+    async def update_name(cls,
+                          sub_id: int,
+                          name: str,
+                          session: AsyncSession):
+        q = update(cls).where(
+            cls.id == sub_id
+        ).values(
+            name=name
+        )
+        await session.execute(q)
+        await session.commit()
+
+    @classmethod
+    async def update_frequency(cls,
+                               sub_id: int,
+                               frequency: int,
+                               session: AsyncSession):
+        q = update(cls).where(
+            cls.id == sub_id
+        ).values(
+            frequency=frequency
+        )
+        await session.execute(q)
+        await session.commit()

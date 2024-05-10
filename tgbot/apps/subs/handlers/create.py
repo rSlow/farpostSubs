@@ -1,68 +1,48 @@
 from aiogram import types
 from aiogram.types import User
 from aiogram_dialog import Window, Dialog, DialogManager
-from aiogram_dialog.widgets.input import TextInput, ManagedTextInput
+from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.text import Const
-from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.buttons import CANCEL_BUTTON, BACK_BUTTON
-from common.dialogs.factory.functions import on_valid_input, on_invalid_input
-from ..ORM.schemas import SubscriptionModel, SubscriptionCreateModel
+from common.dialogs.factory.functions import OnInvalidInput, OnValidInput
+from common.utils.functions import edit_dialog_message
+from ..ORM.schemas import SubscriptionCreateModel
 from ..ORM.subs import Subscription
+from ..scheduler import SubsScheduler
 from ..states import CreateSub
+from ..types import farpost_url_factory
 
 url_window = Window(
     Const("Ожидаю ссылку подписки в формате:"),
     Const("https://www.farpost.ru/saved_search/.../.../show/restored"),
     TextInput(
         id="url",
-        type_factory=SubscriptionCreateModel.url,
-        on_success=on_valid_input("url"),
-        on_error=on_invalid_input("Ошибка валидации ссылки: {error.args[0]}")
+        type_factory=farpost_url_factory,
+        on_success=OnValidInput(pre_saver=lambda url: str(url)),
+        on_error=OnInvalidInput("<b><u>Ошибка валидации ссылки</u></b>: {error.args[0]}")
     ),
     CANCEL_BUTTON,
     state=CreateSub.url
 )
 
 
-async def on_valid_frequency(_: types.Message,
-                             __: ManagedTextInput,
-                             dialog_manager: DialogManager,
-                             data: int):
-    dialog_manager.dialog_data["frequency"] = data
-    await finish_form(dialog_manager)
-
-
 async def on_default_frequency(_: types.CallbackQuery,
                                __: Button,
                                manager: DialogManager):
-    await finish_form(manager)
-
-
-async def finish_form(manager: DialogManager):
-    session: AsyncSession = manager.middleware_data["session"]
-    user: User = manager.middleware_data["event_from_user"]
-    data = manager.dialog_data
-    url: HttpUrl = data["url"]
-    frequency: int = data.get("frequency", 60)
-    sub_model = SubscriptionCreateModel(
-        url=url,
-        frequency=frequency,
-        telegram_id=user.id
-    )
-    await Subscription.add(sub_model, session)
-    await manager.done()
+    manager.dialog_data["frequency"] = 60
+    await manager.next()
 
 
 frequency_window = Window(
     Const("Укажите периодичность проверки в секундах (цифрой):"),
     TextInput(
-        id="url",
+        id="frequency",
         type_factory=int,
-        on_success=on_valid_frequency,
-        on_error=on_invalid_input("Ошибка валидации значения периодичности: {message.text}")
+        on_success=OnValidInput(),
+        on_error=OnInvalidInput("Ошибка валидации значения периодичности: {message.text}")
     ),
     Button(
         text=Const("Значение по умолчанию (60 секунд)"),
@@ -73,7 +53,54 @@ frequency_window = Window(
     state=CreateSub.frequency
 )
 
+
+async def finish_form_wrapper(_: types.Message,
+                              dialog_manager: DialogManager,
+                              __: int):
+    await finish_form(dialog_manager)
+
+
+async def finish_form(manager: DialogManager):
+    await edit_dialog_message(
+        manager=manager,
+        text="Обработка..."
+    )
+
+    session: AsyncSession = manager.middleware_data["session"]
+    user: User = manager.middleware_data["event_from_user"]
+    data = manager.dialog_data
+    url: str = data["url"]
+    frequency: int = data["frequency"]
+    name: str = data["name"]
+    sub_model = SubscriptionCreateModel(
+        url=url,
+        frequency=frequency,
+        telegram_id=user.id,
+        name=name
+    )
+    sub = await Subscription.add(sub_model, session)
+    subs_scheduler: SubsScheduler = manager.middleware_data["subs_scheduler"]
+    subs_scheduler.create_sub(sub)
+
+    await edit_dialog_message(
+        manager=manager,
+        text="Подписка добавлена."
+    )
+    await manager.done()
+
+
+name_window = Window(
+    Const("Введите название подписки:"),
+    TextInput(
+        id="name",
+        on_success=OnValidInput(handle_next=False, after_handler=finish_form_wrapper),
+    ),
+    BACK_BUTTON,
+    state=CreateSub.name
+)
+
 create_sub_dialog = Dialog(
     url_window,
-    frequency_window
+    frequency_window,
+    name_window
 )

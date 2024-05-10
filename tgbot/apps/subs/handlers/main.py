@@ -7,7 +7,7 @@ from ..states import SubsMainFSM, CreateSub, CurrentSubsFSM
 
 subs_main_dialog = Dialog(
     Window(
-        Const("Выберите действие"),
+        Const("Выберите действие:"),
         Start(
             Const("Текущие подписки"),
             state=CurrentSubsFSM.state,
@@ -16,7 +16,7 @@ subs_main_dialog = Dialog(
         Start(
             Const("Добавить подписку"),
             state=CreateSub.url,
-            id="current"
+            id="create"
         ),
         CANCEL_BUTTON,
         state=SubsMainFSM.state

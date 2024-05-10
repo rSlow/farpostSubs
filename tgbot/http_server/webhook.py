@@ -1,6 +1,5 @@
-import logging
-
 from aiogram import Bot
+from loguru import logger
 
 from config import settings
 
@@ -11,4 +10,4 @@ async def init_webhook(bot: Bot) -> None:
         url=webhook_url,
         secret_token=settings.WEBHOOK_SECRET
     )
-    logging.info("SET WEBHOOK")
+    logger.info("SET WEBHOOK")

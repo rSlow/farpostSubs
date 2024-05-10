@@ -1,20 +1,27 @@
 from typing import Annotated
 
-from pydantic import BaseModel, HttpUrl, AfterValidator
+from pydantic import HttpUrl, BeforeValidator, BaseModel
+
+from ..types import farpost_url_factory
 
 
-def url_validator(url: HttpUrl):
-    if url.host != "farpost.ru":
-        raise ValueError(f"wrong host: {url.host}")
-    return url
+def _url_regexp_validator(url: HttpUrl | str):
+    if isinstance(url, str):
+        url = HttpUrl(url)
+    str_url = str(url)
+    return farpost_url_factory(str_url)
 
 
 class SubscriptionCreateModel(BaseModel):
     telegram_id: int
-    url: Annotated[HttpUrl, AfterValidator(url_validator)]
+    url: Annotated[HttpUrl, BeforeValidator(_url_regexp_validator)]
     frequency: int
+    name: str
 
 
 class SubscriptionModel(SubscriptionCreateModel):
     id: int
     is_active: bool
+
+    class Config:
+        from_attributes = True

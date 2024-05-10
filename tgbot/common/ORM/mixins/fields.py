@@ -10,7 +10,10 @@ class IDMixin:
 
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    edited_at: Mapped[datetime] = mapped_column(onupdate=func.now())
+    edited_at: Mapped[datetime] = mapped_column(
+        onupdate=func.now(),
+        nullable=True
+    )
 
 
 class ModelNameMixin:

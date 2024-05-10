@@ -1,4 +1,5 @@
-from typing import Any
+import re
+from typing import Any, Optional
 
 from aiogram.filters import BaseFilter
 from aiogram.types import TelegramObject
@@ -21,3 +22,16 @@ class UserIDFilter(BaseFilter, UserIDMixin):
         if str(obj.from_user.id) not in self.users_id:
             return False
         return True
+
+
+def regexp_factory(pattern: str | re.Pattern[str],
+                   error_message: Optional[str] = None):
+    def _factory(value: str):
+        res = re.match(pattern, value)
+        if res is None:
+            raise ValueError(error_message.format(value=value)
+                             if error_message
+                             else f"{value} is not matched with pattern {pattern}")
+        return res.group()
+
+    return _factory
