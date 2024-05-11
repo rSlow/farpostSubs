@@ -64,9 +64,9 @@ class Subscription(Base,
 
     async def check_exist(self, session: AsyncSession):
         q = select(
-            select(type(self)).filter(
-                self.telegram_id == self.telegram_id,
-                self.url == self.url,
+            select(type(self)).filter_by(
+                telegram_id=self.telegram_id,
+                url=self.url,
             ).exists()
         )
         res = await session.execute(q)
