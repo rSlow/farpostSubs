@@ -43,6 +43,18 @@ class Subscription(Base,
         return [SubscriptionModel.model_validate(user_sub) for user_sub in user_subs]
 
     @classmethod
+    async def deactivate_user(cls,
+                              telegram_id: int,
+                              session: AsyncSession):
+        q = update(cls).where(
+            cls.telegram_id == telegram_id
+        ).values(
+            is_active=False
+        )
+        await session.execute(q)
+        await session.commit()
+
+    @classmethod
     async def get(cls,
                   sub_id: int,
                   session: AsyncSession):
@@ -55,9 +67,11 @@ class Subscription(Base,
         return sub_model
 
     @classmethod
-    async def get_all(cls):
+    async def get_all_active(cls):
         async with Session() as session:
-            q = select(cls)
+            q = select(cls).filter_by(
+                is_active=True
+            )
             res = await session.execute(q)
             subs = res.scalars().all()
             return [SubscriptionModel.model_validate(sub) for sub in subs]

@@ -18,7 +18,7 @@ class SubsScheduler(AbstractScheduler):
         self.dispatcher = dispatcher
 
     async def init(self) -> None:
-        subs = await Subscription.get_all()
+        subs = await Subscription.get_all_active()
         for sub in subs:
             self.create_sub(sub)
         logger.info("INITED SUBSCRIPTION SCHEDULER")
