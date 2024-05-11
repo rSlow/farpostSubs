@@ -32,7 +32,7 @@ async def check_new_notes(sub: SubscriptionModel,
         if is_exists_new_notes:
             logger.info(f"NEW NOTE {sub.id = } {now.strftime('%d-%m-%Y %H:%M:%S')}")
             escaped_name = html.escape(sub.name)
-            text = f"Для подписки <a href='{sub.url}'>{escaped_name}</a> появились новые предложения! {filename}"
+            text = f"Для подписки <a href='{sub.url}'>{escaped_name}</a> появились новые предложения!"
             await bot.send_message(
                 chat_id=sub.telegram_id,
                 text=text
