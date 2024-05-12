@@ -2,14 +2,13 @@ from typing import Annotated
 
 from pydantic import HttpUrl, BeforeValidator, BaseModel, Field
 
-from ..types import farpost_url_factory
+from ..utils.url import prepare_url
 
 
 def url_regexp_validator(url: HttpUrl | str):
     if isinstance(url, str):
         url = HttpUrl(url)
-    str_url = str(url)
-    return farpost_url_factory(str_url)
+    return prepare_url(str(url))
 
 
 def frequency_validator(data: str):

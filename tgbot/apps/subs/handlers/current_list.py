@@ -8,7 +8,7 @@ from aiogram_dialog.widgets.text import Format, Const, Case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.buttons import CANCEL_BUTTON
-from common.whens import WhenAble
+from common.whens import WhenGetterKey
 from ..ORM.subs import Subscription
 from ..states import CurrentSubsFSM, CreateSub, SubMenu
 
@@ -39,7 +39,7 @@ async def on_sub_click(_: types.CallbackQuery,
     )
 
 
-when_subs = WhenAble("subs")
+when_subs = WhenGetterKey("subs")
 
 
 def item_data_selector(pos: int):

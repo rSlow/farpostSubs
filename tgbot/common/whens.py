@@ -1,13 +1,35 @@
-from typing import Self
+from abc import ABC, abstractmethod
+from typing import Self, Generic, TypeVar
 
 from aiogram.types import User
 from aiogram_dialog import DialogManager
 from aiogram_dialog.widgets.common import Whenable
 
-from .filters import UserIDMixin
+from .mixins import UserIDMixin
+from .types import UserIDType
+
+T = TypeVar("T")
 
 
-class WhenUserID(UserIDMixin):
+class BaseWhen(ABC, Generic[T]):
+    def __init__(self, value: T):
+        self.value = value
+        self._flag = True
+
+    @abstractmethod
+    def __call__(self,
+                 data: dict,
+                 widget: Whenable,
+                 manager: DialogManager) -> bool:
+        ...
+
+    def __invert__(self) -> Self:
+        copy = type(self)(self.value)
+        copy._flag = not copy._flag
+        return copy
+
+
+class WhenUserID(BaseWhen[UserIDType], UserIDMixin):
     def __call__(self,
                  _: dict,
                  __: Whenable,
@@ -19,24 +41,23 @@ class WhenUserID(UserIDMixin):
         return False
 
 
-class WhenAble:
-    def __init__(self,
-                 key: str,
-                 flag: bool = True,
-                 in_dialog_data: bool = False):
-        self.key = key
-        self.flag = flag
-        self.in_dialog_data = in_dialog_data
+class WhenKey(BaseWhen[str], ABC):
+    pass
 
+
+class WhenGetterKey(WhenKey):
     def __call__(self,
                  data: dict,
                  _: Whenable,
                  manager: DialogManager):
-        if self.in_dialog_data:
-            result = manager.dialog_data.get(self.key)
-        else:
-            result = data.get(self.key)
-        return bool(result) == self.flag
+        result = data.get(self.value)
+        return bool(result) == self._flag
 
-    def __invert__(self) -> Self:
-        return type(self)(self.key, not self.flag)
+
+class WhenDialogKey(WhenKey):
+    def __call__(self,
+                 data: dict,
+                 _: Whenable,
+                 manager: DialogManager):
+        result = manager.dialog_data.get(self.value)
+        return bool(result) == self._flag

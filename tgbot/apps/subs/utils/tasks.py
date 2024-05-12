@@ -1,4 +1,5 @@
 import html
+from datetime import timedelta
 
 from aiogram import Bot
 from aiohttp import ClientSession
@@ -6,15 +7,23 @@ from loguru import logger
 
 from common.utils.functions import get_now
 from config import settings as common_settings
-from .api import get_headers, download_page, has_new_notes, form_url, save_page
+from .api import download_page, has_new_notes, save_page
+from .url import get_headers
 from .. import settings
 from ..ORM.schemas import SubscriptionModel
+
+
+def _form_url(sub: SubscriptionModel):
+    query_dt = get_now() - timedelta(seconds=sub.frequency)
+    query_ts = int(query_dt.timestamp())
+    request_url = str(sub.url) + f"&date_created_min={query_ts}"
+    return request_url
 
 
 async def check_new_notes(sub: SubscriptionModel,
                           bot: Bot):
     async with ClientSession(headers=get_headers()) as session:
-        request_url = form_url(sub)
+        request_url = _form_url(sub)
         now = get_now()
 
         page_data = await download_page(

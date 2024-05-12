@@ -12,7 +12,7 @@ from common.dialogs.factory.dialog_data import dialog_data_getter
 from common.dialogs.factory.functions import OnInvalidInput
 from common.dialogs.factory.yes_no import yes_no_window
 from common.dialogs.widgets.data_checkbox import DataCheckbox
-from common.whens import WhenAble
+from common.whens import WhenGetterKey
 from ..ORM.schemas import frequency_validator
 from ..ORM.subs import Subscription
 from ..buttons import ON_MAIN_BUTTON
@@ -51,7 +51,7 @@ async def toggle_is_active(_: types.CallbackQuery,
     await manager.update({}, ShowMode.EDIT)
 
 
-when_is_active = WhenAble("is_active")
+when_is_active = WhenGetterKey("is_active")
 
 sub_main_window = Window(
     Format("Подписка <u>{name}</u>"),

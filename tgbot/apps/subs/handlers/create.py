@@ -1,9 +1,11 @@
 from aiogram import types
 from aiogram.types import User
 from aiogram_dialog import Window, Dialog, DialogManager, ShowMode
-from aiogram_dialog.widgets.input import TextInput
+from aiogram_dialog.widgets.input import TextInput, ManagedTextInput
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.text import Const
+from aiohttp import ClientSession
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.buttons import CANCEL_BUTTON, BACK_BUTTON
@@ -14,15 +16,45 @@ from ..ORM.subs import Subscription
 from ..scheduler import SubsScheduler
 from ..states import CreateSub
 from ..types import farpost_url_factory
+from ..utils.api import is_valid_url
+from ..utils.url import get_headers
+
+
+async def on_url_success(message: types.Message,
+                         _: ManagedTextInput,
+                         dialog_manager: DialogManager,
+                         data: str):
+    check_message = await message.answer("Проверка...")
+    await message.delete()
+    try:
+        async with ClientSession(headers=get_headers()) as session:
+            await session.get("https://www.farpost.ru/")  # get cookies
+            async with session.get(data) as response:
+                real_url = response.real_url
+                page_data = await response.content.read()
+        is_valid = is_valid_url(page_data)
+        if is_valid:
+            dialog_manager.dialog_data["url"] = str(real_url.parent) + "?" + real_url.query_string
+            await dialog_manager.next()
+        else:
+            await message.answer(f"<a href='{data}'>Ссылка</a> ведет на сайт FarPost, но при этом страница не содержит "
+                                 f"списка элементов. Проверьте правильность введенной ссылки.")
+    except Exception as ex:
+        logger.warning(ex.args[0])
+        await message.answer("Во время проверки ссылки возникла неизвестная ошибка. "
+                             "Пожалуйста, попробуйте добавить ссылку через некоторое время.")
+    finally:
+        await check_message.delete()
+
 
 url_window = Window(
     Const("Ожидаю ссылку подписки в формате:"),
-    Const("https://www.farpost.ru/saved_search/.../.../show"),
-    Const("Прочие дополнительные параметры запроса уберутся автоматически."),
+    Const("https://www.farpost.ru/..."),
+    Const("Введенный запрос будет проверен на правильность автоматически."),
     TextInput(
         id="url",
         type_factory=farpost_url_factory,
-        on_success=OnValidInput(pre_saver=lambda url: str(url)),
+        on_success=on_url_success,
         on_error=OnInvalidInput("<b><u>Ошибка валидации ссылки</u></b>: {error.args[0]}")
     ),
     CANCEL_BUTTON,
@@ -38,6 +70,7 @@ async def on_default_frequency(_: types.CallbackQuery,
 
 
 frequency_window = Window(
+    Const("Ссылка прошла проверку!"),
     Const("Укажите периодичность проверки в секундах (цифрой), не менее 30 секунд:"),
     TextInput(
         id="frequency",

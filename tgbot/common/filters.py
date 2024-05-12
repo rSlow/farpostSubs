@@ -4,18 +4,10 @@ from typing import Any, Optional
 from aiogram.filters import BaseFilter
 from aiogram.types import TelegramObject
 
-from common.types import UserIDType
-
-
-class UserIDMixin:
-    def __init__(self, users_id: UserIDType):
-        if not isinstance(users_id, (list, tuple)):
-            users_id = (users_id,)
-        self.users_id = users_id
+from common.mixins import UserIDMixin
 
 
 class UserIDFilter(BaseFilter, UserIDMixin):
-
     async def __call__(self,
                        obj: TelegramObject,
                        raw_state: str | None = None) -> bool | dict[str, Any]:
