@@ -3,11 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, validates
 from sqlalchemy_utils import URLType
 
+from common.ORM.database import Base, Session
+from common.ORM.mixins.fields import TimestampMixin, IDMixin
 from .schemas import SubscriptionCreateModel, SubscriptionModel
 from ..exceptions import AlreadyExistsError
-from common.ORM.database import Base, Session
-
-from common.ORM.mixins.fields import TimestampMixin, IDMixin
 
 
 class Subscription(Base,

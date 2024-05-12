@@ -1,17 +1,17 @@
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram_dialog import setup_dialogs
-
-from common.handlers.main import main_menu
-from .routes.events import events_router
-from .storage import redis_storage
-from . import settings
 from loguru import logger
-from .routes.test import test_router
+
+from apps.router import apps_router
+from common.handlers.main import main_menu
+from . import settings
+from .on_events import on_startup, on_shutdown
 from .routes.commands import commands_router
 from .routes.error import error_router
-from .on_events import on_startup, on_shutdown
-from apps.router import apps_router
+from .routes.events import events_router
+from .routes.test import test_router
+from .storage import redis_storage
 
 bot = Bot(
     token=settings.BOT_TOKEN,

@@ -4,7 +4,6 @@ from abc import abstractmethod
 from typing import Protocol, Optional
 
 from aiogram_dialog import DialogManager, ChatEvent
-
 from aiogram_dialog.widgets.common import WhenCondition
 from aiogram_dialog.widgets.kbd.checkbox import BaseCheckbox
 from aiogram_dialog.widgets.text import Text

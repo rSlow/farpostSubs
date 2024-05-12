@@ -5,10 +5,9 @@ from aiogram import Router, types
 from aiogram.filters import ExceptionTypeFilter
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.api.exceptions import NoContextError, UnknownIntent
-
-from common.FSM import CommonFSM
 from loguru import logger
 
+from common.FSM import CommonFSM
 from common.utils.functions import get_message
 
 common_error_router = Router(name="common_errors")
