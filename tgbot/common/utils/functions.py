@@ -13,6 +13,10 @@ def get_now(timezone: Optional[str] = None):
     return datetime.now().astimezone(tz=tz)
 
 
+def get_now_strftime(timezone: Optional[str] = None):
+    return get_now(timezone).strftime("%d-%m-%Y %H:%M:%S")
+
+
 async def edit_dialog_message(manager: DialogManager,
                               text: str,
                               reply_markup: Optional[InlineKeyboardMarkup] = None):

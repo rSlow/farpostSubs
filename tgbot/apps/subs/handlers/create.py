@@ -10,13 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.buttons import CANCEL_BUTTON, BACK_BUTTON
 from common.dialogs.factory.functions import OnInvalidInput, OnValidInput
-from common.utils.functions import edit_dialog_message
+from common.utils.functions import edit_dialog_message, get_now_strftime
+from config import settings as common_settings
 from ..ORM.schemas import SubscriptionCreateModel, frequency_validator
 from ..ORM.subs import Subscription
 from ..scheduler import SubsScheduler
+from ..settings import TEMP_DIR
 from ..states import CreateSub
 from ..types import farpost_url_factory
-from ..utils.api import is_valid_url
+from ..utils.api import is_valid_url, save_page
 from ..utils.url import get_headers
 
 
@@ -28,7 +30,7 @@ async def on_url_success(message: types.Message,
     await message.delete()
     try:
         async with ClientSession(headers=get_headers()) as session:
-            await session.get("https://www.farpost.ru/")  # get cookies
+            # await session.get("https://www.farpost.ru/")  # get cookies
             async with session.get(data) as response:
                 real_url = response.real_url
                 page_data = await response.content.read()
@@ -37,6 +39,11 @@ async def on_url_success(message: types.Message,
             dialog_manager.dialog_data["url"] = str(real_url.parent) + "?" + real_url.query_string
             await dialog_manager.next()
         else:
+            if common_settings.DEBUG:
+                save_page(
+                    path=TEMP_DIR / "pages" / f"error_page {get_now_strftime()}.html",
+                    data=page_data
+                )
             await message.answer(f"<a href='{data}'>Ссылка</a> ведет на сайт FarPost, но при этом страница не содержит "
                                  f"списка элементов. Проверьте правильность введенной ссылки.")
     except Exception as ex:
