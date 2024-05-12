@@ -2,7 +2,8 @@ from aiogram.webhook.aiohttp_server import setup_application as setup
 from aiohttp.web import run_app
 
 from config import settings
-from config.bot import dp, bot, init_dispatcher
+from config.bot import bot
+from config.dispatcher import dp, init_dispatcher
 from config.enums import BotMode
 from http_server.app import app as http_app
 

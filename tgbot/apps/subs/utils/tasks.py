@@ -1,12 +1,12 @@
 import html
 from datetime import timedelta
 
-from aiogram import Bot
 from aiohttp import ClientSession
 from loguru import logger
 
 from common.utils.functions import get_now
 from config import settings as common_settings
+from config.bot import bot
 from .api import download_page, has_new_notes, save_page
 from .url import get_headers
 from .. import settings
@@ -20,8 +20,7 @@ def _form_url(sub: SubscriptionModel):
     return request_url
 
 
-async def check_new_notes(sub: SubscriptionModel,
-                          bot: Bot):
+async def check_new_notes(sub: SubscriptionModel, **_):
     async with ClientSession(headers=get_headers()) as session:
         request_url = _form_url(sub)
         now = get_now()

@@ -2,7 +2,8 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from aiohttp import web
 
 from config import settings
-from config.bot import dp, bot
+from config.bot import bot
+from config.dispatcher import dp
 from config.enums import BotMode
 
 app = web.Application()
