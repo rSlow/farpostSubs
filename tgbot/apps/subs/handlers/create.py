@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.buttons import CANCEL_BUTTON, BACK_BUTTON
 from common.dialogs.factory.functions import OnInvalidInput, OnValidInput
-from common.utils.functions import edit_dialog_message, send_message
+from common.utils.functions import edit_dialog_message
 from ..ORM.schemas import SubscriptionCreateModel, frequency_validator
 from ..ORM.subs import Subscription
 from ..scheduler import SubsScheduler
@@ -83,11 +83,11 @@ async def finish_form(manager: DialogManager):
     subs_scheduler: SubsScheduler = manager.middleware_data["subs_scheduler"]
     subs_scheduler.create_sub(sub)
 
-    await send_message(
+    await edit_dialog_message(
         manager=manager,
         text="Подписка добавлена."
     )
-    manager.show_mode = ShowMode.DELETE_AND_SEND
+    manager.show_mode = ShowMode.SEND
     await manager.done()
 
 
