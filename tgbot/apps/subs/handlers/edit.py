@@ -178,7 +178,7 @@ async def delete_sub(callback: types.CallbackQuery,
     )
 
     await callback.message.edit_text("Удаление завершено!")
-    manager.show_mode = ShowMode.DELETE_AND_SEND
+    manager.show_mode = ShowMode.SEND
     await manager.done()
 
 
