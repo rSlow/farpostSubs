@@ -6,5 +6,5 @@ URLPattern = re.compile(r"https?://(www\.)?farpost\.ru/saved_search/[A-Za-z0-9]+
 
 farpost_url_factory = regexp_factory(
     pattern=URLPattern,
-    error_message="wrong url: {value}"
+    error_message="Неверная ссылка: {value}"
 )

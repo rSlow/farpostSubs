@@ -27,9 +27,9 @@ def get_headers():
 
 
 def form_url(sub: SubscriptionModel):
-    now = get_now() - timedelta(seconds=sub.frequency)
-    now_ts = int(now.timestamp())
-    request_url = str(sub.url) + f"?since={now_ts}"
+    query_dt = get_now() - timedelta(seconds=sub.frequency)
+    query_ts = int(query_dt.timestamp())
+    request_url = str(sub.url) + f"?date_created_min={query_ts}"
     return request_url
 
 
@@ -49,5 +49,5 @@ def save_page(path: Path,
 
 def has_new_notes(data: bytes):
     soup = BeautifulSoup(data, "html.parser")
-    new_elements = soup.select("*[data-accuracy=sse-bulletin-new]")
-    return bool(new_elements)
+    new_ads = soup.select("*[data-accuracy=sse-bulletin-new]")
+    return bool(new_ads)
