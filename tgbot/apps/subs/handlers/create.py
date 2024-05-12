@@ -30,7 +30,7 @@ async def on_url_success(message: types.Message,
     await message.delete()
     try:
         async with ClientSession(headers=get_headers()) as session:
-            # await session.get("https://www.farpost.ru/")  # get cookies
+            await session.get("https://www.farpost.ru/")  # get cookies
             async with session.get(data) as response:
                 real_url = response.real_url
                 page_data = await response.content.read()
