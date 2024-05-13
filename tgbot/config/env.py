@@ -1,10 +1,11 @@
 from pathlib import Path
+from typing import Optional
 
 from environs import Env
 
 
-def get_env(env_dir: Path | None = None,
-            env_file: Path | None = None) -> Env:
+def get_env(env_dir: Optional[Path] = None,
+            env_file: Optional[Path] = None) -> Env:
     env = Env()
 
     if env_dir is not None:

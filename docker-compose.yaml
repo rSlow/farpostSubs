@@ -49,7 +49,7 @@ services:
     restart: always
     hostname: rabbitmq_host
     ports:
-      - "${RABBITMQ_ADMIN_PORT}:15672"
+      - "${RABBITMQ_PANEL_PORT}:15672"
       - "${RABBITMQ_PORT}:5672"
     env_file:
       - ${ENV_FILE:-.env}

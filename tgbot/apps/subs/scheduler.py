@@ -2,20 +2,23 @@ from aiogram import Bot, Dispatcher
 from apscheduler.job import Job
 from loguru import logger
 
+from common.mq.manager import RabbitConnectionManager
+from common.mq.schemas import MQMessage
 from common.scheduler import AbstractScheduler
 from config import settings
 from .ORM.schemas import SubscriptionModel
 from .ORM.subs import Subscription
-from .utils.tasks import check_new_notes
 
 
 class SubsScheduler(AbstractScheduler):
     def __init__(self,
                  bot: Bot,
-                 dispatcher: Dispatcher):
+                 dispatcher: Dispatcher,
+                 rabbit: RabbitConnectionManager):
         super().__init__(timezone=settings.TIMEZONE)
         self.bot = bot
         self.dispatcher = dispatcher
+        self.rabbit = rabbit
 
     async def init(self) -> None:
         subs = await Subscription.get_all_active()
@@ -30,12 +33,13 @@ class SubsScheduler(AbstractScheduler):
     def create_sub(self,
                    obj: SubscriptionModel,
                    **kwargs):
+        message = MQMessage(body=obj)
         kwargs.update({
-            "sub": obj,
-            "bot": self.bot
+            "messages": [message],
+            "routing_key": self.rabbit.queue_key
         })
         return self.add_job(
-            func=check_new_notes,
+            func=self.rabbit.send_messages,
             id=self.get_job_id(obj),
             trigger="interval",
             seconds=obj.frequency,

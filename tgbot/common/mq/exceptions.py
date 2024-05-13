@@ -1,0 +1,2 @@
+class NotCreatedError(RuntimeError):
+    pass
