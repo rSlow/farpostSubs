@@ -2,12 +2,11 @@ from aiogram import Bot, Dispatcher
 from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 from loguru import logger
 
+from apps.subs.mq.manager import init_subs_mq
 from apps.subs.scheduler import SubsScheduler
 from common.ORM.database import Session
 from common.middlewares import DbSessionMiddleware, ContextMiddleware, register_middlewares
-from common.mq.manager import RabbitConnectionManager
-from common.mq.schemas import MQConnectionConfig, MQExchangeConfig, MQQueueConfig
-from common.scheduler import init_schedulers
+from common.scheduler.functions import init_schedulers
 from config import settings
 from config.enums import BotMode
 from config.logger import init_logging
@@ -21,30 +20,19 @@ async def on_startup(dispatcher: Dispatcher,
     logger.info("STARTUP")
     init_logging()
 
-    rabbit_connection = RabbitConnectionManager(
-        connection_config=MQConnectionConfig(url=settings.RABBITMQ_URL),
-        exchange_config=MQExchangeConfig(
-            name="ads",
-            publisher_confirms=False
-        ),
-        queue_config=MQQueueConfig(name="ads")
-    )
-    await rabbit_connection.create()
+    subs_mq = await init_subs_mq()
 
     schedulers = {
         "subs_scheduler": SubsScheduler(
             bot=bot,
             dispatcher=dispatcher,
-            rabbit=rabbit_connection
+            rabbit=subs_mq
         ),
     }
     await init_schedulers([*schedulers.values()])
 
     middlewares = [
-        ContextMiddleware(
-            rabbit_connection=rabbit_connection,
-            **schedulers,
-        ),
+        ContextMiddleware(**schedulers),
         DbSessionMiddleware(session_pool=Session),
         CallbackAnswerMiddleware()
     ]

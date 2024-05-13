@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Sequence, Any
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -16,9 +16,3 @@ class AbstractScheduler(AsyncIOScheduler, ABC):
     @abstractmethod
     def get_job_id(obj: Any) -> str:
         ...
-
-
-async def init_schedulers(schedulers: Sequence[AbstractScheduler]):
-    for scheduler in schedulers:
-        scheduler.start()
-        await scheduler.init()

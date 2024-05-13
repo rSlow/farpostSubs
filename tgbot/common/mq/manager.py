@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from functools import wraps
 from typing import Optional, Awaitable, Callable, ParamSpec, TypeVar
 
@@ -14,18 +15,18 @@ T = TypeVar("T")
 
 def check_created_connection(func: Callable[P, Awaitable[T]]):
     @wraps(func)
-    async def _inner(self: "RabbitConnectionManager",
+    async def _inner(self: "BaseMQConnectionManager",
                      *args: P.args, **kwargs: P.kwargs) -> T:
-        if not isinstance(self, RabbitConnectionManager):
+        if not isinstance(self, BaseMQConnectionManager):
             raise TypeError(f"{self.__class__.__name__} is not a RabbitConnectionManager")
         if not self._created:
-            raise NotCreatedError("Connection was not created")
+            raise NotCreatedError
         return await func(self, *args, **kwargs)
 
     return _inner
 
 
-class RabbitConnectionManager:
+class BaseMQConnectionManager(ABC):
     _connection: Optional[AbstractRobustConnection] = None
     _channel: Optional[AbstractRobustChannel] = None
     _exchange: Optional[AbstractRobustExchange] = None
@@ -34,10 +35,10 @@ class RabbitConnectionManager:
     _created: bool = False
 
     def __init__(self, *,
-                 connection_config: Optional[MQConnectionConfig] = MQConnectionConfig(),
-                 channel_config: Optional[MQChannelConfig] = MQChannelConfig(),
-                 exchange_config: Optional[MQExchangeConfig] = MQExchangeConfig(name="default"),
-                 queue_config: Optional[MQQueueConfig] = MQQueueConfig(name="default")):
+                 connection_config: MQConnectionConfig = MQConnectionConfig(),
+                 channel_config: MQChannelConfig = MQChannelConfig(),
+                 exchange_config: MQExchangeConfig = MQExchangeConfig(name="default"),
+                 queue_config: MQQueueConfig = MQQueueConfig(name="default")):
         self._connection_config = connection_config
         self._channel_config = channel_config
         self._exchange_config = exchange_config
@@ -61,23 +62,24 @@ class RabbitConnectionManager:
         self._created = True
 
     @check_created_connection
-    async def send_messages(self,
-                            messages: list[MQMessage | str],
-                            routing_key: str,
-                            mandatory: bool = True,
-                            immediate: bool = False,
-                            timeout: Optional[int | float] = None):
-        async with self._channel.transaction():
-            for message in messages:
-                if isinstance(message, str):
-                    message = MQMessage(body=message)
-                await self._exchange.publish(
-                    message.as_sendable(),
-                    routing_key=routing_key,
-                    mandatory=mandatory,
-                    immediate=immediate,
-                    timeout=timeout
-                )
+    async def send_message(self,
+                           message: MQMessage | str,
+                           routing_key: str,
+                           mandatory: bool = True,
+                           immediate: bool = False,
+                           timeout: Optional[int | float] = None):
+        if not isinstance(message, (MQMessage, str)):
+            raise TypeError(f"message is type {message.__class__.__name__}, not 'MQMessage' or 'str'")
+        if isinstance(message, str):
+            message = MQMessage(body=message)
+        publish_message = message.as_sendable()
+        await self._exchange.publish(
+            message=publish_message,
+            routing_key=routing_key,
+            mandatory=mandatory,
+            immediate=immediate,
+            timeout=timeout
+        )
 
     @check_created_connection
     async def consume(self,
@@ -99,3 +101,7 @@ class RabbitConnectionManager:
             robust=robust
         )
         return consumer_tag
+
+    @abstractmethod
+    def form_message(self, **kwargs) -> MQMessage:
+        ...

@@ -34,3 +34,7 @@ class SubscriptionModel(SubscriptionCreateModel):
 
     class Config:
         from_attributes = True
+
+
+class MessageSubscription(SubscriptionModel):
+    timestamp: int

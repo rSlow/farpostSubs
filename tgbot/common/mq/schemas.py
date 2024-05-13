@@ -1,23 +1,17 @@
-from abc import ABC
 from asyncio import AbstractEventLoop
-from datetime import datetime, timedelta
 from ssl import SSLContext
 from typing import Optional, Any
 
 from aio_pika import RobustConnection, Message, DeliveryMode
-from aio_pika.abc import AbstractRobustConnection, ExchangeType, SSLOptions
+from aio_pika.abc import AbstractRobustConnection, ExchangeType, SSLOptions, DateType
 from pydantic import BaseModel, Field
 from yarl import URL
 
 from .types import Jsonable
+from ..utils.pydantic_mixins import TypesAllowedConfig
 
 
-class BaseConfig(BaseModel, ABC):
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class MQConnectionConfig(BaseConfig):
+class MQConnectionConfig(TypesAllowedConfig):
     url: Optional[str | URL] = None
     host: str = "localhost"
     port: int = 5672
@@ -34,13 +28,13 @@ class MQConnectionConfig(BaseConfig):
     kwargs: dict[str, Any] = Field(default_factory=dict)
 
 
-class MQChannelConfig(BaseConfig):
+class MQChannelConfig(TypesAllowedConfig):
     channel_number: Optional[int] = None
     publisher_confirms: bool = True
     on_return_raises: bool = False
 
 
-class MQExchangeConfig(BaseConfig):
+class MQExchangeConfig(TypesAllowedConfig):
     name: str
     type: ExchangeType | str = ExchangeType.DIRECT
     durable: bool = False
@@ -52,7 +46,7 @@ class MQExchangeConfig(BaseConfig):
     robust: bool = True
 
 
-class MQQueueConfig(BaseConfig):
+class MQQueueConfig(TypesAllowedConfig):
     name: Optional[str] = None
     durable: bool = False
     exclusive: bool = False
@@ -63,20 +57,20 @@ class MQQueueConfig(BaseConfig):
     robust: bool = True
 
 
-class MQMessage(BaseModel):
+class MQMessage(TypesAllowedConfig):
     body: str | BaseModel | bytes
-    headers: Optional[dict] = None
-    content_type: Optional[str] = None,
-    content_encoding: Optional[str] = None,
-    delivery_mode: Optional[DeliveryMode | int] = None,
-    priority: Optional[int] = None,
-    correlation_id: Optional[str] = None,
-    reply_to: Optional[str] = None,
-    expiration: Optional[int | datetime | float | timedelta] = None,
-    message_id: Optional[str] = None,
-    timestamp: Optional[int | datetime | float | timedelta] = None,
-    type: Optional[str] = None,
-    user_id: Optional[str] = None,
+    headers: Optional[dict[str, Jsonable]] = None
+    content_type: Optional[str] = None
+    content_encoding: Optional[str] = None
+    delivery_mode: Optional[DeliveryMode | int] = None
+    priority: Optional[int] = None
+    correlation_id: Optional[str] = None
+    reply_to: Optional[str] = None
+    expiration: Optional[DateType] = None
+    message_id: Optional[str] = None
+    timestamp: Optional[DateType] = None
+    type: Optional[str] = None
+    user_id: Optional[str] = None
     app_id: Optional[str] = None
 
     def as_sendable(self):
@@ -85,4 +79,4 @@ class MQMessage(BaseModel):
             self.body = str_body.encode()
         if isinstance(self.body, str):
             self.body = self.body.encode()
-            return Message(**self.model_dump(mode="json"))
+        return Message(**self.model_dump())

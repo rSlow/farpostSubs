@@ -18,7 +18,7 @@ from ..scheduler import SubsScheduler
 from ..settings import TEMP_DIR
 from ..states import CreateSub
 from ..types import farpost_url_factory
-from ..utils.api import is_valid_url, save_page
+from ..utils.api import is_valid_page, save_page
 from ..utils.url import get_headers
 
 
@@ -34,7 +34,7 @@ async def on_url_success(message: types.Message,
             async with session.get(data) as response:
                 real_url = response.real_url
                 page_data = await response.content.read()
-        is_valid = is_valid_url(page_data)
+        is_valid = is_valid_page(page_data)
         if is_valid:
             dialog_manager.dialog_data["url"] = str(real_url.parent) + "?" + real_url.query_string
             await dialog_manager.next()

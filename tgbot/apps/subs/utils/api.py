@@ -19,7 +19,7 @@ def save_page(path: Path,
         file.write(data)
 
 
-def is_valid_url(data: bytes):
+def is_valid_page(data: bytes):
     soup = BeautifulSoup(data, "html.parser")
     ads_table = soup.select("table.viewdirBulletinTable")
     return bool(ads_table)
