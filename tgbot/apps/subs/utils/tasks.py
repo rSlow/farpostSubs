@@ -1,56 +1,47 @@
 import html
-from datetime import datetime
+from datetime import timedelta
 
 from aiohttp import ClientSession
 from loguru import logger
 
-from common.mq.exceptions import RejectedError
+from common.utils.functions import get_now
 from config import settings as common_settings
 from config.bot import bot
-from .functions import as_strftime
+from .api import download_page, get_new_ads_list, save_page
+from .url import get_headers
 from .. import settings
-from ..ORM.schemas import MessageSubscription
-from ..utils.api import download_page, has_new_notes, save_page, is_valid_page
-from ..utils.url import get_headers
+from ..ORM.schemas import SubscriptionModel
 
 
-def __form_request_url(sub: MessageSubscription):
-    return str(sub.url) + f"&date_created_min={sub.timestamp}"
+def _form_url(sub: SubscriptionModel):
+    query_dt = get_now() - timedelta(seconds=sub.frequency)
+    query_ts = int(query_dt.timestamp())
+    request_url = str(sub.url) + f"&date_created_min={query_ts}"
+    return request_url
 
 
-async def check_new_ads(sub: MessageSubscription):
-    sub_dt = datetime.fromtimestamp(sub.timestamp, common_settings.TIMEZONE)
-
+async def check_new_notes(sub: SubscriptionModel):
     async with ClientSession(headers=get_headers()) as session:
-        request_url = __form_request_url(sub)
+        request_url = _form_url(sub)
+        now = get_now()
+
         page_data = await download_page(
             session=session,
             url=request_url
         )
+        is_exists_new_notes = get_new_ads_list(page_data)
+        if is_exists_new_notes:
+            logger.info(f"NEW NOTE {sub.id = } {now.strftime('%d-%m-%Y %H:%M:%S')}")
+            escaped_name = html.escape(sub.name)
+            text = f"Для подписки <a href='{request_url}'>{escaped_name}</a> появились новые предложения!"
+            await bot.send_message(
+                chat_id=sub.telegram_id,
+                text=text
+            )
 
-    is_valid = is_valid_page(page_data)
-    if not is_valid:
         if common_settings.DEBUG:
-            filename = f"ERROR {as_strftime(sub_dt)}.html"
+            filename = f"{now.strftime('%d-%m-%Y %H:%M:%S')}.html"
             save_page(
                 path=settings.TEMP_DIR / "pages" / filename,
                 data=page_data
             )
-        raise RejectedError(f"page at task {as_strftime(sub_dt)} is not valid")
-
-    is_exists_new_notes = has_new_notes(page_data)
-    if is_exists_new_notes:
-        logger.info(f"NEW NOTE {sub.id=} {as_strftime(sub_dt)}")
-        escaped_name = html.escape(sub.name)
-        text = f"Для подписки <a href='{request_url}'>{escaped_name}</a> появились новые предложения!"
-        await bot.send_message(
-            chat_id=sub.telegram_id,
-            text=text
-        )
-
-    if common_settings.DEBUG:
-        filename = f"{as_strftime(sub_dt)}.html"
-        save_page(
-            path=settings.TEMP_DIR / "pages" / filename,
-            data=page_data
-        )

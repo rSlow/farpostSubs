@@ -58,6 +58,15 @@ services:
     volumes:
       - rabbitmq:/var/lib/rabbitmq
 
+  selenium:
+    image: selenium/standalone-chrome:latest
+    restart: always
+    shm_size: 500m
+    ports:
+      - "${SELENIUM_PORT}:${SELENIUM_PORT}"
+      - "7900:7900"
+    privileged: true
+
 volumes:
   redis:
   postgres:
