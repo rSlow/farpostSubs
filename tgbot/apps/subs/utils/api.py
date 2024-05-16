@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import aiofiles
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
@@ -12,11 +13,11 @@ async def download_page(session: ClientSession,
     return data
 
 
-def save_page(path: Path,
-              data: bytes):
+async def save_page(path: Path,
+                    data: bytes):
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "wb") as file:
-        file.write(data)
+    async with aiofiles.open(path, "wb") as file:
+        await file.write(data)
 
 
 def is_valid_url(data: bytes):
@@ -25,7 +26,6 @@ def is_valid_url(data: bytes):
     return bool(ads_table)
 
 
-def has_new_notes(data: bytes):
+def get_new_ads_list(data: bytes):
     soup = BeautifulSoup(data, "html.parser")
-    new_ads = soup.select("*[data-accuracy=sse-bulletin-new]")
-    return bool(new_ads)
+    return soup.select("*[data-accuracy=sse-bulletin-new]")
