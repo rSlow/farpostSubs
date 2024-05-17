@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 async def download_page(session: ClientSession,
                         url: str):
-    await session.get("https://www.farpost.ru/")  # get cookies
+    # await session.get("https://www.farpost.ru/")  # get cookies
     async with session.get(url) as response:
         data = await response.content.read()
     return data
@@ -20,12 +20,12 @@ async def save_page(path: Path,
         await file.write(data)
 
 
-def is_valid_page(data: bytes):
+def is_valid_url(data: bytes | str):
     soup = BeautifulSoup(data, "html.parser")
     ads_table = soup.select("table.viewdirBulletinTable")
     return bool(ads_table)
 
 
-def get_new_ads_list(data: bytes):
+def get_new_ads_list(data: bytes | str):
     soup = BeautifulSoup(data, "html.parser")
     return soup.select("*[data-accuracy=sse-bulletin-new]")

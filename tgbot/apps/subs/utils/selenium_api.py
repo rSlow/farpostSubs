@@ -1,51 +1,55 @@
-from contextlib import contextmanager
-from functools import partial
+import asyncio
+import uuid
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from dishka import make_container, Scope
+from loguru import logger
 
+from apps.subs import settings
+from apps.subs.di.provider import driver_provider, A, B
+from apps.subs.utils.api import is_valid_url
 from common.utils.decorators import to_async_thread
-from config import settings
+from common.utils.timechecker import timechecker
 
-
-@contextmanager
-def selenium_driver():
-    options = webdriver.ChromeOptions()
-    args = [
-        '--headless',
-        'window-size=1920x1080',
-        # "--disable-gpu",
-        "--no-sandbox",
-        "--disable-dev-shm-usage"
-    ]
-    [options.add_argument(arg) for arg in args]
-    driver = webdriver.Remote(
-        settings.SELENIUM_URL,
-        DesiredCapabilities.CHROME,
-        options=options
-    )
-
-    try:
-        yield driver
-    finally:
-        driver.close()
-        driver.quit()
+from selenium.webdriver import Remote as RemoteWebdriver
 
 
 @to_async_thread
-def has_new_ads(url: str):
-    with selenium_driver() as driver:
-        driver.get(url)
-        driver.implicitly_wait(10)
-        new_ads = driver.find_elements("*[data-accuracy=sse-bulletin-new]", By.CSS_SELECTOR)
-        return new_ads
+@timechecker
+def __test__(url: str, ):
+    logger.info("start __test__")
+
+    container = make_container(driver_provider, start_scope=Scope.RUNTIME)
+    a = container.get(A)
+
+    print(repr(a))
+    # driver.get(url)
+    # driver.implicitly_wait(10)
+    # page_data = driver.page_source
+    #
+    # is_valid = is_valid_url(page_data)
+    # if not is_valid:
+    #     _uuid = uuid.uuid4().hex[:8]
+    #     logger.warning(f"INVALID PAGE {_uuid}")
+    #     with open(settings.TEMP_DIR / "pages" / f"invalid_page_{_uuid}.html", "w") as file:
+    #         file.write(page_data)
+    # else:
+    #     logger.info("VALID PAGE")
 
 
-@to_async_thread
-def is_valid_url(url: str):
-    with selenium_driver() as driver:
-        driver.get(url)
-        driver.implicitly_wait(10)
-        ads_table = driver.find_element("table.viewdirBulletinTable", By.CSS_SELECTOR)
-        return ads_table
+async def __a_main__(times: int):
+    tasks = [__test__(URL) for _ in range(times)]
+    await asyncio.gather(*tasks)
+
+
+async def __main__():
+    for _ in range(5):
+        await __test__(URL)
+
+
+URL = "https://www.farpost.ru/vladivostok/realty/rent_flats/"
+
+if __name__ == '__main__':
+    logger.info("START")
+
+    asyncio.run(__main__())
+    # asyncio.run(__a_main__(3))

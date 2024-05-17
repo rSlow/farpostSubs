@@ -63,7 +63,7 @@ services:
     restart: always
     shm_size: 500m
     ports:
-      - "${SELENIUM_PORT}:${SELENIUM_PORT}"
+      - "${SELENIUM_PORT}:4444"
       - "7900:7900"
     privileged: true
 
