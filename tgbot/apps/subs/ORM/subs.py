@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, validates
 from sqlalchemy_utils import URLType
 
-from common.ORM.database import Base, Session
+from common.ORM.database import Base
 from common.ORM.mixins.fields import TimestampMixin, IDMixin
 from .schemas import SubscriptionCreateModel, SubscriptionModel
 from ..exceptions import AlreadyExistsError
@@ -66,14 +66,13 @@ class Subscription(Base,
         return sub_model
 
     @classmethod
-    async def get_all_active(cls):
-        async with Session() as session:
-            q = select(cls).filter_by(
-                is_active=True
-            )
-            res = await session.execute(q)
-            subs = res.scalars().all()
-            return [SubscriptionModel.model_validate(sub) for sub in subs]
+    async def get_all_active(cls, session: AsyncSession):
+        q = select(cls).filter_by(
+            is_active=True
+        )
+        res = await session.execute(q)
+        subs = res.scalars().all()
+        return [SubscriptionModel.model_validate(sub) for sub in subs]
 
     async def check_exist(self, session: AsyncSession):
         q = select(

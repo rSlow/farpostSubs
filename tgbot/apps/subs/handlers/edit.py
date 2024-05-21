@@ -16,7 +16,7 @@ from common.whens import WhenGetterKey
 from ..ORM.schemas import frequency_validator
 from ..ORM.subs import Subscription
 from ..buttons import ON_MAIN_BUTTON
-from ..scheduler import SubsScheduler
+from ..scheduler import AdsScheduler
 from ..states import SubMenu
 
 
@@ -35,7 +35,7 @@ async def toggle_is_active(_: types.CallbackQuery,
                            checkbox: DataCheckbox,
                            manager: DialogManager):
     sub_id: int = manager.dialog_data["id"]
-    subs_scheduler: SubsScheduler = manager.middleware_data["subs_scheduler"]
+    subs_scheduler: AdsScheduler = manager.middleware_data["subs_scheduler"]
     is_active: bool = checkbox.is_checked(manager)
     session: AsyncSession = manager.middleware_data["session"]
     await Subscription.set_is_active(
@@ -126,7 +126,7 @@ async def set_frequency(message: types.Message,
                         frequency: int):
     if frequency != manager.dialog_data["frequency"]:
         session: AsyncSession = manager.middleware_data["session"]
-        subs_scheduler: SubsScheduler = manager.middleware_data["subs_scheduler"]
+        subs_scheduler: AdsScheduler = manager.middleware_data["subs_scheduler"]
         sub_id: int = manager.dialog_data["id"]
 
         await Subscription.update_frequency(
@@ -167,7 +167,7 @@ async def delete_sub(callback: types.CallbackQuery,
     await callback.message.edit_text("Удаление...")
 
     session: AsyncSession = manager.middleware_data["session"]
-    subs_scheduler: SubsScheduler = manager.middleware_data["subs_scheduler"]
+    subs_scheduler: AdsScheduler = manager.middleware_data["subs_scheduler"]
     sub_id: int = manager.dialog_data["id"]
 
     sub = await Subscription.get(sub_id, session)

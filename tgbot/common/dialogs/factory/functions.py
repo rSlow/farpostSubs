@@ -1,24 +1,22 @@
 import html
 from abc import abstractmethod
-from typing import TypeVar, Optional, Protocol, Any, Callable
+from typing import Optional, Protocol, Any, Callable
 
 from aiogram import types
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import ManagedTextInput
 
-T = TypeVar("T")
-
 
 class AfterHandler(Protocol):
     @abstractmethod
-    async def __call__(self,
-                       message: types.Message,
-                       manager: DialogManager,
-                       data: T):
+    async def __call__[T](self,
+                          message: types.Message,
+                          manager: DialogManager,
+                          data: T):
         ...
 
 
-PreSaver = Callable[[T], Any]
+type PreSaver[T] = Callable[[T], Any]
 
 
 class OnValidInput:
@@ -36,11 +34,11 @@ class OnValidInput:
         self.after_handler = after_handler
         self.pre_saver = pre_saver
 
-    async def __call__(self,
-                       message: types.Message,
-                       text_input: ManagedTextInput[T],
-                       dialog_manager: DialogManager,
-                       data: T):
+    async def __call__[T](self,
+                          message: types.Message,
+                          text_input: ManagedTextInput[T],
+                          dialog_manager: DialogManager,
+                          data: T):
         dialog_manager.show_mode = self.mode
         if self.key_name is None:
             self.key_name = text_input.widget.widget_id
@@ -65,11 +63,11 @@ class OnInvalidInput:
         self.mode = mode
         self.delete_input = delete_input
 
-    async def __call__(self,
-                       message: types.Message,
-                       text_input: ManagedTextInput[T],
-                       dialog_manager: DialogManager,
-                       error: ValueError):
+    async def __call__[T](self,
+                          message: types.Message,
+                          text_input: ManagedTextInput[T],
+                          dialog_manager: DialogManager,
+                          error: ValueError):
         dialog_manager.show_mode = self.mode
         message_text = self.error_message.format(
             message=message,

@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Optional, Awaitable, Callable, ParamSpec, TypeVar
+from typing import Optional, Awaitable, Callable
 
 from aio_pika import connect_robust
 from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel, AbstractRobustExchange, AbstractRobustQueue
@@ -8,11 +8,8 @@ from .exceptions import NotCreatedError
 from .schemas import MQConnectionConfig, MQExchangeConfig, MQQueueConfig, MQChannelConfig, MQMessage
 from .types import ConsumeFunction, Jsonable
 
-P = ParamSpec("P")
-T = TypeVar("T")
 
-
-def check_created_connection(func: Callable[P, Awaitable[T]]):
+def check_created_connection[** P, T](func: Callable[P, Awaitable[T]]):
     @wraps(func)
     async def _inner(self: "RabbitConnectionManager",
                      *args: P.args, **kwargs: P.kwargs) -> T:

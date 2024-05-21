@@ -1,27 +1,21 @@
-from aiogram import Bot, Dispatcher
 from apscheduler.job import Job
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
+from taskiq import AsyncBroker, BrokerMessage
 
-from common.mq.manager import RabbitConnectionManager
-from common.mq.schemas import MQMessage
 from common.scheduler import AbstractScheduler
 from config import settings
 from .ORM.schemas import SubscriptionModel
 from .ORM.subs import Subscription
 
 
-class SubsScheduler(AbstractScheduler):
-    def __init__(self,
-                 bot: Bot,
-                 dispatcher: Dispatcher,
-                 rabbit: RabbitConnectionManager):
+class AdsScheduler(AbstractScheduler):
+    def __init__(self, broker: AsyncBroker):
         super().__init__(timezone=settings.TIMEZONE)
-        self.bot = bot
-        self.dispatcher = dispatcher
-        self.rabbit = rabbit
+        self.broker = broker
 
-    async def init(self) -> None:
-        subs = await Subscription.get_all_active()
+    async def init(self, session: AsyncSession) -> None:
+        subs = await Subscription.get_all_active(session)
         for sub in subs:
             self.create_sub(sub)
         logger.info("INITED SUBSCRIPTION SCHEDULER")
@@ -33,17 +27,15 @@ class SubsScheduler(AbstractScheduler):
     def create_sub(self,
                    obj: SubscriptionModel,
                    **kwargs):
-        message = MQMessage(body=obj)
-        kwargs.update({
-            "messages": [message],
-            "routing_key": self.rabbit.queue_key
-        })
+        message = BrokerMessage(
+            task_name="check_notes",
+            message=obj.model_dump_json().encode(),
+        )
         return self.add_job(
-            func=self.rabbit.send_messages,
+            func=self.broker.kick(message),
             id=self.get_job_id(obj),
             trigger="interval",
-            seconds=obj.frequency,
-            kwargs=kwargs,
+            seconds=obj.frequency
         )
 
     def delete_sub(self, obj: SubscriptionModel) -> None:

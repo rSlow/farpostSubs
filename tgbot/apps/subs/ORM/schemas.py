@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import HttpUrl, BeforeValidator, BaseModel, Field
 
-from ..utils.url import prepare_url
+from ..api.url import prepare_url
 
 
 def url_regexp_validator(url: HttpUrl | str):

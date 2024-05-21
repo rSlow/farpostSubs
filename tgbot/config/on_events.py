@@ -1,12 +1,16 @@
 from aiogram import Bot, Dispatcher
 from aiogram.utils.callback_answer import CallbackAnswerMiddleware
+from dishka import make_async_container
+from dishka.integrations.aiogram import setup_dishka as aiogram_setup_dishka
+from dishka.integrations.taskiq import setup_dishka as taskiq_setup_dishka
 from loguru import logger
+from taskiq_aio_pika import AioPikaBroker
 
-from apps.subs.scheduler import SubsScheduler
+from apps.subs.di.provider import AdsProvider
+from apps.subs.scheduler import AdsScheduler
 from common.ORM.database import Session
+from common.di.sql_provider import SQLProvider
 from common.middlewares import DbSessionMiddleware, ContextMiddleware, register_middlewares
-from common.mq.manager import RabbitConnectionManager
-from common.mq.schemas import MQConnectionConfig, MQExchangeConfig, MQQueueConfig
 from common.scheduler import init_schedulers
 from config import settings
 from config.enums import BotMode
@@ -21,28 +25,22 @@ async def on_startup(dispatcher: Dispatcher,
     logger.info("STARTUP")
     init_logging()
 
-    rabbit_connection = RabbitConnectionManager(
-        connection_config=MQConnectionConfig(url=settings.RABBITMQ_URL),
-        exchange_config=MQExchangeConfig(
-            name="ads",
-            publisher_confirms=False
-        ),
-        queue_config=MQQueueConfig(name="ads")
+    container = make_async_container(
+        AdsProvider(), SQLProvider(),
+        context={Bot: bot}
     )
-    await rabbit_connection.create()
+    async with container() as container_request:
+        ads_broker = await container_request.get(AioPikaBroker)
+    taskiq_setup_dishka(container, ads_broker)
+    aiogram_setup_dishka(container, dispatcher)
 
     schedulers = {
-        "subs_scheduler": SubsScheduler(
-            bot=bot,
-            dispatcher=dispatcher,
-            rabbit=rabbit_connection
-        ),
+        "ads_scheduler": AdsScheduler(broker=ads_broker),
     }
     await init_schedulers([*schedulers.values()])
 
     middlewares = [
         ContextMiddleware(
-            rabbit_connection=rabbit_connection,
             **schedulers,
         ),
         DbSessionMiddleware(session_pool=Session),
