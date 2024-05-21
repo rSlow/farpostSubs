@@ -14,12 +14,13 @@ from common.utils.functions import edit_dialog_message, get_now_strftime
 from config import settings as common_settings
 from ..ORM.schemas import SubscriptionCreateModel, frequency_validator
 from ..ORM.subs import Subscription
-from ..scheduler import SubsScheduler
+from ..api.parser import is_valid_url
+from ..api.saver import save_page
+from ..api.url import get_headers
+from ..scheduler import AdsScheduler
 from ..settings import TEMP_DIR
 from ..states import CreateSub
 from ..types import farpost_url_factory
-from ..utils.api import is_valid_page, save_page
-from ..utils.url import get_headers
 
 
 async def on_url_success(message: types.Message,
@@ -34,13 +35,13 @@ async def on_url_success(message: types.Message,
             async with session.get(data) as response:
                 real_url = response.real_url
                 page_data = await response.content.read()
-        is_valid = is_valid_page(page_data)
+        is_valid = is_valid_url(page_data)
         if is_valid:
             dialog_manager.dialog_data["url"] = str(real_url.parent) + "?" + real_url.query_string
             await dialog_manager.next()
         else:
             if common_settings.DEBUG:
-                save_page(
+                await save_page(
                     path=TEMP_DIR / "pages" / f"error_page {get_now_strftime()}.html",
                     data=page_data
                 )
@@ -120,7 +121,7 @@ async def finish_form(manager: DialogManager):
         name=name
     )
     sub = await Subscription.add(sub_model, session)
-    subs_scheduler: SubsScheduler = manager.middleware_data["subs_scheduler"]
+    subs_scheduler: AdsScheduler = manager.middleware_data["subs_scheduler"]
     subs_scheduler.create_sub(sub)
 
     await edit_dialog_message(

@@ -2,14 +2,15 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class AbstractScheduler(AsyncIOScheduler, ABC):
-    def __init__(self, **kwargs):
+class AbstractScheduler[** P](AsyncIOScheduler, ABC):
+    def __init__(self, **kwargs: P.kwargs):
         super().__init__(**kwargs)
 
     @abstractmethod
-    async def init(self) -> None:
+    async def init(self, **kwargs) -> None:
         ...
 
     @staticmethod

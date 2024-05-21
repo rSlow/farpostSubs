@@ -1,28 +1,24 @@
 import html
-from datetime import timedelta
 
+from aiogram import Bot
 from aiohttp import ClientSession
+from dishka import FromDishka
 from loguru import logger
 
 from common.utils.functions import get_now
 from config import settings as common_settings
-from config.bot import bot
-from .api import download_page, get_new_ads_list, save_page
-from .url import get_headers
 from .. import settings
-from ..ORM.schemas import SubscriptionModel
+from ..api.aiohttp import download_page
+from ..api.parser import get_new_ads_list
+from ..api.saver import save_page
+from ..api.url import get_headers, form_url
 
 
-def _form_url(sub: SubscriptionModel):
-    query_dt = get_now() - timedelta(seconds=sub.frequency)
-    query_ts = int(query_dt.timestamp())
-    request_url = str(sub.url) + f"&date_created_min={query_ts}"
-    return request_url
+async def check_new_notes_aiohttp(bot: FromDishka[Bot], *args, **kwargs):
+    sub = ...
 
-
-async def check_new_notes(sub: SubscriptionModel):
     async with ClientSession(headers=get_headers()) as session:
-        request_url = _form_url(sub)
+        request_url = form_url(sub.url, sub.frequency)
         now = get_now()
 
         page_data = await download_page(
@@ -41,7 +37,7 @@ async def check_new_notes(sub: SubscriptionModel):
 
         if common_settings.DEBUG:
             filename = f"{now.strftime('%d-%m-%Y %H:%M:%S')}.html"
-            save_page(
+            await save_page(
                 path=settings.TEMP_DIR / "pages" / filename,
                 data=page_data
             )
