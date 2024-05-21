@@ -15,7 +15,7 @@ def check_created_connection[** P, T](func: Callable[P, Awaitable[T]]):
     async def _inner(self: "BaseMQConnectionManager",
                      *args: P.args, **kwargs: P.kwargs) -> T:
         if not isinstance(self, BaseMQConnectionManager):
-            raise TypeError(f"{self.__class__.__name__} is not a RabbitConnectionManager")
+            raise TypeError(f"{self.__class__.__name__} is not a MQConnectionManager")
         if not self._created:
             raise NotCreatedError
         return await func(self, *args, **kwargs)

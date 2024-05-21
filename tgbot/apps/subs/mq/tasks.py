@@ -3,20 +3,27 @@ import html
 from aiogram import Bot
 from aiohttp import ClientSession
 from dishka import FromDishka
+from dishka.integrations.taskiq import inject
 from loguru import logger
+from selenium.webdriver import Remote as RemoteWebDriver
 
 from common.utils.functions import get_now
 from config import settings as common_settings
+from .broker import ads_broker
 from .. import settings
+from ..ORM.schemas import SubscriptionModel
 from ..api.aiohttp import download_page
 from ..api.parser import get_new_ads_list
 from ..api.saver import save_page
 from ..api.url import get_headers, form_url
 
 
-async def check_new_notes_aiohttp(bot: FromDishka[Bot], *args, **kwargs):
-    sub = ...
-
+@ads_broker.task(name="check_new_notes_aiohttp")
+@inject
+async def check_new_notes_aiohttp(sub: SubscriptionModel,
+                                  bot: FromDishka[Bot],
+                                  webdriver: FromDishka[RemoteWebDriver]):
+    print(webdriver)
     async with ClientSession(headers=get_headers()) as session:
         request_url = form_url(sub.url, sub.frequency)
         now = get_now()

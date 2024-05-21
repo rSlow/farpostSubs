@@ -3,7 +3,7 @@ from ssl import SSLContext
 from typing import Optional, Any
 
 from aio_pika import RobustConnection, Message, DeliveryMode
-from aio_pika.abc import AbstractRobustConnection, ExchangeType, SSLOptions, DateType
+from aio_pika.abc import AbstractRobustConnection, ExchangeType, SSLOptions, DateType, HeadersType
 from pydantic import BaseModel, Field
 from yarl import URL
 
@@ -57,9 +57,9 @@ class MQQueueConfig(TypesAllowedConfig):
     robust: bool = True
 
 
-class MQMessage(TypesAllowedConfig):
+class MQMessage(TypesAllowedConfig):  # MessageInfo
     body: str | BaseModel | bytes
-    headers: Optional[dict[str, Jsonable]] = None
+    headers: Optional[HeadersType] = None
     content_type: Optional[str] = None
     content_encoding: Optional[str] = None
     delivery_mode: Optional[DeliveryMode | int] = None

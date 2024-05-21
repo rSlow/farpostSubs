@@ -1,12 +1,13 @@
 from apscheduler.job import Job
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from taskiq import AsyncBroker, BrokerMessage
+from taskiq import AsyncBroker
 
-from common.scheduler import AbstractScheduler
+from common.scheduler.base import AbstractScheduler
 from config import settings
 from .ORM.schemas import SubscriptionModel
 from .ORM.subs import Subscription
+from .mq.tasks import check_new_notes_aiohttp
 
 
 class AdsScheduler(AbstractScheduler):
@@ -24,18 +25,13 @@ class AdsScheduler(AbstractScheduler):
     def get_job_id(obj: SubscriptionModel):
         return str(obj.id)
 
-    def create_sub(self,
-                   obj: SubscriptionModel,
-                   **kwargs):
-        message = BrokerMessage(
-            task_name="check_notes",
-            message=obj.model_dump_json().encode(),
-        )
+    def create_sub(self, obj: SubscriptionModel):
         return self.add_job(
-            func=self.broker.kick(message),
+            func=check_new_notes_aiohttp.kiq,
             id=self.get_job_id(obj),
             trigger="interval",
-            seconds=obj.frequency
+            seconds=obj.frequency,
+            args=(obj,)
         )
 
     def delete_sub(self, obj: SubscriptionModel) -> None:

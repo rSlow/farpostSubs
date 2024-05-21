@@ -4,14 +4,12 @@ from dishka import make_async_container
 from dishka.integrations.aiogram import setup_dishka as aiogram_setup_dishka
 from dishka.integrations.taskiq import setup_dishka as taskiq_setup_dishka
 from loguru import logger
-from taskiq_aio_pika import AioPikaBroker
 
 from apps.subs.di.provider import AdsProvider
+from apps.subs.mq.broker import ads_broker
 from apps.subs.scheduler import AdsScheduler
 from common.ORM.database import Session
-from common.di.sql_provider import SQLProvider
-from common.middlewares import DbSessionMiddleware, ContextMiddleware, register_middlewares
-from common.scheduler import init_schedulers
+from common.middlewares import ContextMiddleware, register_middlewares, DbSessionMiddleware
 from config import settings
 from config.enums import BotMode
 from config.logger import init_logging
@@ -26,24 +24,25 @@ async def on_startup(dispatcher: Dispatcher,
     init_logging()
 
     container = make_async_container(
-        AdsProvider(), SQLProvider(),
+        AdsProvider(),
         context={Bot: bot}
     )
-    async with container() as container_request:
-        ads_broker = await container_request.get(AioPikaBroker)
+    await ads_broker.startup()
+    ads_scheduler = AdsScheduler(broker=ads_broker)
+    ads_scheduler.start()
+    async with Session() as session:
+        await ads_scheduler.init(session)
+
     taskiq_setup_dishka(container, ads_broker)
     aiogram_setup_dishka(container, dispatcher)
 
     schedulers = {
-        "ads_scheduler": AdsScheduler(broker=ads_broker),
+        "ads_scheduler": ads_scheduler,
     }
-    await init_schedulers([*schedulers.values()])
 
     middlewares = [
-        ContextMiddleware(
-            **schedulers,
-        ),
-        DbSessionMiddleware(session_pool=Session),
+        ContextMiddleware(**schedulers),
+        DbSessionMiddleware(Session),
         CallbackAnswerMiddleware()
     ]
     register_middlewares(middlewares, dispatcher)
@@ -59,6 +58,7 @@ async def on_shutdown(dispatcher: Dispatcher,
                       bot: Bot):
     logger.info("SHUTDOWN")
     await bot.session.close()
+    await ads_broker.shutdown()
 
     if settings.BOT_MODE == BotMode.WEBHOOK:
         await bot.delete_webhook()

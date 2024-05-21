@@ -11,6 +11,13 @@ services:
     depends_on:
       - postgres
       - redis
+      - rabbitmq
+
+  taskiq_workers:
+    build: ./tgbot
+    restart: always
+    depends_on:
+      - rabbitmq
 
   postgres:
     image: postgres
