@@ -7,7 +7,7 @@ from common.scheduler.base import AbstractScheduler
 from config import settings
 from .ORM.schemas import SubscriptionModel
 from .ORM.subs import Subscription
-from .mq.tasks import check_new_notes_aiohttp
+from .mq.utils import kiq_sub_message
 
 
 class AdsScheduler(AbstractScheduler):
@@ -27,7 +27,7 @@ class AdsScheduler(AbstractScheduler):
 
     def create_sub(self, obj: SubscriptionModel):
         return self.add_job(
-            func=check_new_notes_aiohttp.kiq,
+            func=kiq_sub_message,
             id=self.get_job_id(obj),
             trigger="interval",
             seconds=obj.frequency,

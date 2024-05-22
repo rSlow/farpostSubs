@@ -2,6 +2,8 @@ from pathlib import Path
 
 import aiofiles
 
+DATE_FORMAT = '%d-%m-%Y %H:%M:%S'
+
 
 async def save_page(path: Path,
                     data: bytes):

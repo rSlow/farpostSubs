@@ -26,6 +26,8 @@ class AdsProvider(Provider):
             options=options
         )
         logger.info(f"{id(webdriver)=}")
-        yield webdriver
-        logger.info("webdriver is closing")
-        await to_async_thread(webdriver.close)()
+        try:
+            yield webdriver
+        finally:
+            logger.info("webdriver is closing")
+            await to_async_thread(webdriver.close)()

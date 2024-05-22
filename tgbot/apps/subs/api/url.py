@@ -1,17 +1,6 @@
 import re
-from datetime import timedelta
 
 from fake_useragent import UserAgent
-
-from common.utils.functions import get_now
-
-
-def form_url(url: str,
-             frequency: int):
-    query_dt = get_now() - timedelta(seconds=frequency)
-    query_ts = int(query_dt.timestamp())
-    request_url = str(url) + f"&date_created_min={query_ts}"
-    return request_url
 
 
 def get_headers():

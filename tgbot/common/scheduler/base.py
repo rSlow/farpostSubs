@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Iterable
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AbstractScheduler[** P](AsyncIOScheduler, ABC):
