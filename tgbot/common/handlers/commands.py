@@ -8,20 +8,15 @@ common_commands_router = Router(name="common_commands")
 
 
 @common_commands_router.message(Command("start", "cancel"))
-async def command_start(message: types.Message,
+async def command_start(_: types.Message,
                         dialog_manager: DialogManager):
-    preparing_message = await message.answer(
-        text="Подготовка...",
-        reply_markup=types.ReplyKeyboardRemove()
-    )
-    await preparing_message.delete()
     await dialog_manager.start(
         state=CommonFSM.state,
         mode=StartMode.RESET_STACK
     )
 
 
-@common_commands_router.message(Command("update"))
-async def command_update(_: types.Message,
-                         dialog_manager: DialogManager):
+@common_commands_router.message(Command("menu"))
+async def command_menu(_: types.Message,
+                       dialog_manager: DialogManager):
     await dialog_manager.update({})

@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from common.utils.functions import get_now
 from ..ORM.schemas import SubscriptionModel, MessageSubscription
-from .tasks import check_new_notes_aiohttp
+from .tasks import check_new_notes
 
 
 def get_query_timestamp(sub: SubscriptionModel):
@@ -11,14 +11,9 @@ def get_query_timestamp(sub: SubscriptionModel):
     return query_ts
 
 
-async def kiq_sub_message(sub: SubscriptionModel):
+async def check_new_notes_preloader(sub: SubscriptionModel):
     sub_message = MessageSubscription(
         **sub.model_dump(),
         timestamp=int(get_now().timestamp())
     )
-    await check_new_notes_aiohttp.kiq(sub_message)
-    # sub_message = MessageSubscription(
-    #     **sub.model_dump(),
-    #     timestamp=int(get_now().timestamp())
-    # )
-    # await check_new_notes_aiohttp.kiq(sub_message)
+    await check_new_notes.kiq(sub_message)

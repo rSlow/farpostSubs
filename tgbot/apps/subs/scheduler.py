@@ -7,7 +7,7 @@ from common.scheduler.base import AbstractScheduler
 from config import settings
 from .ORM.schemas import SubscriptionModel
 from .ORM.subs import Subscription
-from .mq.utils import kiq_sub_message
+from .mq.utils import check_new_notes_preloader
 
 
 class AdsScheduler(AbstractScheduler):
@@ -27,7 +27,7 @@ class AdsScheduler(AbstractScheduler):
 
     def create_sub(self, obj: SubscriptionModel):
         return self.add_job(
-            func=kiq_sub_message,
+            func=check_new_notes_preloader,
             id=self.get_job_id(obj),
             trigger="interval",
             seconds=obj.frequency,

@@ -13,7 +13,7 @@ from common.scheduler.functions import init_schedulers
 from config import settings
 from config.enums import BotMode
 from config.logger import init_logging
-from config.ui_config import set_ui_commands
+from config.ui_config import init_ui_commands
 from http_server.webhook import init_webhook
 
 
@@ -22,12 +22,6 @@ async def on_startup(dispatcher: Dispatcher,
                      **__):
     logger.info("STARTUP")
     init_logging()
-
-    container = make_async_container(
-        AdsProvider(),
-        context={Bot: bot}
-    )
-    aiogram_setup_dishka(container, dispatcher)
 
     await ads_broker.startup()
 
@@ -48,7 +42,7 @@ async def on_startup(dispatcher: Dispatcher,
     ]
     register_middlewares(middlewares, dispatcher)
 
-    await set_ui_commands(bot)
+    await init_ui_commands(bot)
 
     if settings.BOT_MODE == BotMode.WEBHOOK:
         await bot.delete_webhook()
@@ -58,7 +52,9 @@ async def on_startup(dispatcher: Dispatcher,
 async def on_shutdown(dispatcher: Dispatcher,
                       bot: Bot):
     logger.info("SHUTDOWN")
+
     await bot.session.close()
+
     await ads_broker.shutdown()
 
     if settings.BOT_MODE == BotMode.WEBHOOK:
