@@ -26,7 +26,6 @@ class AdsScheduler(AbstractScheduler):
         return str(obj.id)
 
     def create_sub(self, sub: SubscriptionModel):
-        self.broker.publish()
         return self.add_job(
             func=publish_ad_message,
             id=self.get_job_id(sub),

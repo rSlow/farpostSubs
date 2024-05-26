@@ -20,6 +20,8 @@ async def on_startup(dispatcher: Dispatcher,
     logger.info("STARTUP")
     init_logging()
 
+    await broker.connect()
+
     ads_scheduler = AdsScheduler(broker=broker)
     schedulers = {
         "ads_scheduler": ads_scheduler,
@@ -50,7 +52,7 @@ async def on_shutdown(dispatcher: Dispatcher,
 
     await bot.session.close()
 
-    await ads_broker.shutdown()
+    await broker.close()
 
     if settings.BOT_MODE == BotMode.WEBHOOK:
         await bot.delete_webhook()

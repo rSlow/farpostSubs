@@ -4,11 +4,8 @@ from aiogram import Bot, Dispatcher
 from faststream import FastStream, ContextRepo
 from loguru import logger
 
+from .annotations import DISPATCHER_KEY, BOT_KEY
 from .utils import import_object
-
-BOT_KEY = "aiogram_bot"
-WORKFLOW_KEY = "aiogram_workflow"
-DISPATCHER_KEY = "aiogram_dispatcher"
 
 
 def startup_event_generator(dispatcher_path: str,
@@ -42,10 +39,14 @@ def startup_event_generator(dispatcher_path: str,
             **kwargs,
         }
 
-        await dispatcher.emit_startup(**workflow_data)
+        try:
+            await dispatcher.emit_startup(**workflow_data)
+        except Exception as exc:
+            logger.warning(f"Error found while starting up:")
+            logger.exception(exc)
 
-        context.set_global("dispatcher", dispatcher)
-        context.set_global("bot", bot)
+        context.set_global(DISPATCHER_KEY, dispatcher)
+        context.set_global(BOT_KEY, bot)
 
     return startup
 
@@ -67,13 +68,19 @@ def shutdown_event_generator() -> Callable[[ContextRepo], Awaitable[None]]:
         #     return
 
         bot: Bot = context.get(BOT_KEY)
-        workflow_data: dict[str, Any] = context.get(WORKFLOW_KEY)
         dispatcher: Dispatcher = context.get(DISPATCHER_KEY)
 
+        workflow_data = {
+            "dispatcher": dispatcher,
+            "bot": bot,
+            **dispatcher.workflow_data,
+        }
+
         try:
-            await dispatcher.emit_shutdown(bot, **workflow_data)
+            await dispatcher.emit_shutdown(**workflow_data)
         except Exception as exc:
-            logger.warning(f"Error found while shutting down: {exc}")
+            logger.warning(f"Error found while shutting down:")
+            logger.exception(exc)
 
     return shutdown
 

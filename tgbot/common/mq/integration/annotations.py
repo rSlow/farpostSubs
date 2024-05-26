@@ -3,5 +3,8 @@ from typing import Annotated
 from aiogram import Bot, Dispatcher
 from faststream import Context
 
-AnnotatedBot = Annotated[Bot, Context("bot")]
-AnnotatedDispatcher = Annotated[Dispatcher, Context("dispatcher")]
+BOT_KEY = "aiogram_bot"
+DISPATCHER_KEY = "aiogram_dispatcher"
+
+AnnotatedBot = Annotated[Bot, Context(BOT_KEY)]
+AnnotatedDispatcher = Annotated[Dispatcher, Context(DISPATCHER_KEY)]
