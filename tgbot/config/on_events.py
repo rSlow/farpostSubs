@@ -1,14 +1,11 @@
 from aiogram import Bot, Dispatcher
 from aiogram.utils.callback_answer import CallbackAnswerMiddleware
-from dishka import make_async_container
-from dishka.integrations.aiogram import setup_dishka as aiogram_setup_dishka
 from loguru import logger
 
-from apps.subs.di.provider import AdsProvider
-from apps.subs.mq.broker import ads_broker
 from apps.subs.scheduler import AdsScheduler
 from common.ORM.database import Session
 from common.middlewares import ContextMiddleware, register_middlewares, DbSessionMiddleware
+from common.mq.app import broker
 from common.scheduler.functions import init_schedulers
 from config import settings
 from config.enums import BotMode
@@ -23,9 +20,7 @@ async def on_startup(dispatcher: Dispatcher,
     logger.info("STARTUP")
     init_logging()
 
-    await ads_broker.startup()
-
-    ads_scheduler = AdsScheduler(broker=ads_broker)
+    ads_scheduler = AdsScheduler(broker=broker)
     schedulers = {
         "ads_scheduler": ads_scheduler,
     }

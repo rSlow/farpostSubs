@@ -1,17 +1,17 @@
 from apscheduler.job import Job
+from faststream.rabbit import RabbitBroker
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from taskiq import AsyncBroker
 
 from common.scheduler.base import AbstractScheduler
 from config import settings
 from .ORM.schemas import SubscriptionModel
 from .ORM.subs import Subscription
-from .mq.utils import check_new_notes_preloader
+from .mq.publishers import publish_ad_message
 
 
 class AdsScheduler(AbstractScheduler):
-    def __init__(self, broker: AsyncBroker):
+    def __init__(self, broker: RabbitBroker):
         super().__init__(timezone=settings.TIMEZONE)
         self.broker = broker
 
@@ -25,13 +25,17 @@ class AdsScheduler(AbstractScheduler):
     def get_job_id(obj: SubscriptionModel):
         return str(obj.id)
 
-    def create_sub(self, obj: SubscriptionModel):
+    def create_sub(self, sub: SubscriptionModel):
+        self.broker.publish()
         return self.add_job(
-            func=check_new_notes_preloader,
-            id=self.get_job_id(obj),
+            func=publish_ad_message,
+            id=self.get_job_id(sub),
             trigger="interval",
-            seconds=obj.frequency,
-            args=(obj,)
+            seconds=sub.frequency,
+            kwargs={
+                "broker": self.broker,
+                "sub": sub
+            }
         )
 
     def delete_sub(self, obj: SubscriptionModel) -> None:
