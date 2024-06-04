@@ -17,15 +17,17 @@ from faststream.rabbit.annotations import RabbitMessage
 from loguru import logger
 
 from common.mq.integration import AnnotatedBot
-from .routing import ads_main_queue, ads_main_exchange
+from .routing import ads_queue, ads_main_exchange, ads_delay_exchange
 
 ads_router = RabbitRouter()
-
-
-@ads_router.subscriber(
-    ads_main_queue, ads_main_exchange,
-    no_ack=True
+ads_delay_publisher = ads_router.publisher(
+    queue=ads_queue,
+    exchange=ads_delay_exchange
 )
+
+
+# @ads_router.subscriber(ads_queue, ads_main_exchange)
+@ads_router.subscriber(ads_queue, ads_delay_exchange)
 async def check_new_ads(sub: SubscriptionModel,
                         message: RabbitMessage,
                         bot: AnnotatedBot):
@@ -59,6 +61,13 @@ async def check_new_ads(sub: SubscriptionModel,
             text = f"Для подписки <a href='{request_url}'>{escaped_name}</a> появились новые предложения!"
             await bot.send_message(
                 chat_id=sub.telegram_id,
-                text=text
+                text=text,
+                disable_web_page_preview=True
             )
-            await message.ack()
+    else:
+        await message.reject()
+        await ads_delay_publisher.publish(
+            message=sub,
+            timestamp=message.raw_message.timestamp,
+            headers={"x-delay": 10000}
+        )

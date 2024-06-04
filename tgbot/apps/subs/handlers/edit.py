@@ -35,7 +35,7 @@ async def toggle_is_active(_: types.CallbackQuery,
                            checkbox: DataCheckbox,
                            manager: DialogManager):
     sub_id: int = manager.dialog_data["id"]
-    subs_scheduler: AdsScheduler = manager.middleware_data["subs_scheduler"]
+    ads_scheduler: AdsScheduler = manager.middleware_data["ads_scheduler"]
     is_active: bool = checkbox.is_checked(manager)
     session: AsyncSession = manager.middleware_data["session"]
     await Subscription.set_is_active(
@@ -45,9 +45,9 @@ async def toggle_is_active(_: types.CallbackQuery,
     )
     sub = await Subscription.get(sub_id, session)
     if is_active:
-        subs_scheduler.create_sub(sub)
+        ads_scheduler.create_sub(sub)
     else:
-        subs_scheduler.delete_sub(sub)
+        ads_scheduler.delete_sub(sub)
     await manager.update({}, ShowMode.EDIT)
 
 
@@ -126,7 +126,7 @@ async def set_frequency(message: types.Message,
                         frequency: int):
     if frequency != manager.dialog_data["frequency"]:
         session: AsyncSession = manager.middleware_data["session"]
-        subs_scheduler: AdsScheduler = manager.middleware_data["subs_scheduler"]
+        ads_scheduler: AdsScheduler = manager.middleware_data["ads_scheduler"]
         sub_id: int = manager.dialog_data["id"]
 
         await Subscription.update_frequency(
@@ -135,7 +135,7 @@ async def set_frequency(message: types.Message,
             frequency=frequency
         )
         sub = await Subscription.get(sub_id, session)
-        subs_scheduler.update_sub(sub)
+        ads_scheduler.update_sub(sub)
 
     await message.delete()
     manager.show_mode = ShowMode.EDIT
@@ -167,11 +167,11 @@ async def delete_sub(callback: types.CallbackQuery,
     await callback.message.edit_text("Удаление...")
 
     session: AsyncSession = manager.middleware_data["session"]
-    subs_scheduler: AdsScheduler = manager.middleware_data["subs_scheduler"]
+    ads_scheduler: AdsScheduler = manager.middleware_data["ads_scheduler"]
     sub_id: int = manager.dialog_data["id"]
 
     sub = await Subscription.get(sub_id, session)
-    subs_scheduler.delete_sub(sub)
+    ads_scheduler.delete_sub(sub)
     await Subscription.delete(
         sub_id=sub_id,
         session=session

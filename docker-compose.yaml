@@ -52,7 +52,7 @@ services:
       - ${ENV_FILE:-.env}
 
   rabbitmq:
-    image: rabbitmq:management
+    image: heidiks/rabbitmq-delayed-message-exchange:latest
     restart: always
     hostname: rabbitmq_host
     ports:

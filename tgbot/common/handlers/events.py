@@ -14,14 +14,14 @@ common_events_router = Router(name="common_events")
 async def user_blocked_bot(event: ChatMemberUpdated,
                            dialog_manager: DialogManager):
     session: AsyncSession = dialog_manager.middleware_data["session"]
-    subs_scheduler: AdsScheduler = dialog_manager.middleware_data["subs_scheduler"]
+    ads_scheduler: AdsScheduler = dialog_manager.middleware_data["ads_scheduler"]
 
     subs = await Subscription.get_all_user_subscriptions(
         telegram_id=event.from_user.id,
         session=session
     )
     for sub in subs:
-        subs_scheduler.delete_sub(sub)
+        ads_scheduler.delete_sub(sub)
 
     await Subscription.deactivate_user(
         telegram_id=event.from_user.id,

@@ -121,8 +121,8 @@ async def finish_form(manager: DialogManager):
         name=name
     )
     sub = await Subscription.add(sub_model, session)
-    subs_scheduler: AdsScheduler = manager.middleware_data["subs_scheduler"]
-    subs_scheduler.create_sub(sub)
+    ads_scheduler: AdsScheduler = manager.middleware_data["ads_scheduler"]
+    ads_scheduler.create_sub(sub)
 
     await edit_dialog_message(
         manager=manager,
